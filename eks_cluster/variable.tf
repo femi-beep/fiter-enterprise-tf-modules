@@ -50,3 +50,15 @@ variable "aws_auth_roles" {
   default     = []
   type        = list(string)
 }
+
+variable "cluster_endpoint_public_access" {
+  description = "Indicates whether or not the Amazon EKS public API server endpoint is enabled, set to False to enable only private access via VPN"
+  default = true
+  type = bool
+}
+
+variable "cluster_endpoint_public_access_cidrs" {
+  description = "List of CIDR blocks which can access the Amazon EKS public API server endpoint"
+  default = [ "0.0.0.0/0" ]
+  type = list(string)
+}

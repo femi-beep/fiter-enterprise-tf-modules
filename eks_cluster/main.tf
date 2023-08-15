@@ -85,7 +85,8 @@ module "eks" {
   prefix_separator                   = "-"
   iam_role_name                      = "${local.prefix}-role"
 
-  cluster_endpoint_public_access     = true
+  cluster_endpoint_public_access     = var.cluster_endpoint_public_access
+  cluster_endpoint_public_access_cidrs = var.cluster_endpoint_public_access_cidrs
 
   eks_managed_node_group_defaults = {
     block_device_mappings = {
@@ -160,4 +161,65 @@ module "ebs_kms_key" {
   aliases = ["eks/${local.name}/ebs"]
 
   tags = local.tags
+}
+
+##############################
+# EBS CSI Role
+##############################
+
+resource "aws_kms_key" "gp3_kms" {
+  description             = "KMS key for ${module.eks.cluster_name} EBS volumes"
+  deletion_window_in_days = 10
+}
+
+# policy for gp3 and gp3 encrypted storage using EBS CSI Driver
+data aws_iam_policy_document aws_ebs_csi_driver_encryption {
+  version = "2012-10-17"
+  statement {
+    effect  = "Allow"
+    actions = [
+      "kms:CreateGrant",
+      "kms:ListGrants",
+      "kms:RevokeGrant"
+    ]
+    resources = [aws_kms_key.gp3_kms.arn]
+    condition {
+      test     = "Bool"
+      variable = "kms:GrantIsForAWSResource"
+      values   = ["true"]
+    }
+  }
+  statement {
+    effect  = "Allow"
+    actions = [
+      "kms:Encrypt",
+      "kms:Decrypt",
+      "kms:ReEncrypt*",
+      "kms:GenerateDataKey*",
+      "kms:DescribeKey"
+    ]
+    resources = [aws_kms_key.gp3_kms.arn]
+  }
+}
+
+resource "aws_iam_policy" "aws_ebs_csi" {
+  name_prefix = "${local.prefix}-aws-ebs-csi"
+  description = "Ebs policy for cluster ${local.prefix}"
+  policy      = data.aws_iam_policy_document.aws_ebs_csi_driver_encryption.json
+}
+
+module "aws_ebs_csi_iam_service_account" {
+  source                        = "terraform-aws-modules/iam/aws//modules/iam-assumable-role-with-oidc"
+  version                       = "4.1.0"
+  create_role                   = true
+  role_name                     = "${local.prefix}-aws-ebs-csi"
+  provider_url                  = replace(module.eks.cluster_oidc_issuer_url, "https://", "")
+  role_policy_arns              = [aws_iam_policy.aws_ebs_csi.arn]
+  oidc_fully_qualified_subjects = ["system:serviceaccount:kube-system:ebs-csi-controller-sa"]
+}
+
+# Attach AWS Managed Role for EBSCSI Driver
+resource "aws_iam_role_policy_attachment" "aws_ebs_csi_standard_role_attachment" {
+  role       = module.aws_ebs_csi_iam_service_account.iam_role_name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
 }
