@@ -93,7 +93,7 @@ variable "irsa_subnet_account_id" {
   default     = ""
 }
 
-variable "irsa_oidc_provider_arn" {
+variable "cluster_oidc_issuer_url" {
   description = "OIDC provider arn used in trust policy for IAM role for service accounts"
   type        = string
   default     = ""

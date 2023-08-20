@@ -4,17 +4,12 @@
 
 output "irsa_name" {
   description = "The name of the IAM role for service accounts"
-  value       = try(aws_iam_role.irsa[0].name, null)
+  value       = try(module.karpenter.iam_role_name, null)
 }
 
 output "irsa_arn" {
   description = "The Amazon Resource Name (ARN) specifying the IAM role for service accounts"
-  value       = try(aws_iam_role.irsa[0].arn, null)
-}
-
-output "irsa_unique_id" {
-  description = "Stable and unique string identifying the IAM role for service accounts"
-  value       = try(aws_iam_role.irsa[0].unique_id, null)
+  value       = try(module.karpenter.iam_role_arn, null)
 }
 
 ################################################################################

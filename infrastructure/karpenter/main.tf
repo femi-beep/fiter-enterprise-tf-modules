@@ -1,6 +1,7 @@
 data "aws_partition" "current" {}
 data "aws_caller_identity" "current" {}
 
+
 locals {
   account_id = data.aws_caller_identity.current.account_id
   partition  = data.aws_partition.current.partition
@@ -16,52 +17,27 @@ locals {
   create_irsa      = var.create && var.create_irsa
   irsa_name        = coalesce(var.irsa_name, "KarpenterIRSA-${var.cluster_name}")
   irsa_policy_name = coalesce(var.irsa_policy_name, local.irsa_name)
-
-  irsa_oidc_provider_url = replace(var.irsa_oidc_provider_arn, "/^(.*provider/)/", "")
 }
 
-data "aws_iam_policy_document" "irsa_assume_role" {
-  count = local.create_irsa ? 1 : 0
 
-  statement {
-    effect  = "Allow"
-    actions = ["sts:AssumeRoleWithWebIdentity"]
-
-    principals {
-      type        = "Federated"
-      identifiers = [var.irsa_oidc_provider_arn]
-    }
-
-    condition {
-      test     = var.irsa_assume_role_condition_test
-      variable = "${local.irsa_oidc_provider_url}:sub"
-      values   = [for sa in var.irsa_namespace_service_accounts : "system:serviceaccount:${sa}"]
-    }
-
-    # https://aws.amazon.com/premiumsupport/knowledge-center/eks-troubleshoot-oidc-and-irsa/?nc1=h_ls
-    condition {
-      test     = var.irsa_assume_role_condition_test
-      variable = "${local.irsa_oidc_provider_url}:aud"
-      values   = ["sts.amazonaws.com"]
-    }
-  }
-}
-
-resource "aws_iam_role" "irsa" {
-  count = local.create_irsa ? 1 : 0
-
-  name        = var.irsa_use_name_prefix ? null : local.irsa_name
+resource "aws_iam_policy" "karpenter" {
   name_prefix = var.irsa_use_name_prefix ? "${local.irsa_name}-" : null
   path        = var.irsa_path
   description = var.irsa_description
-
-  assume_role_policy    = data.aws_iam_policy_document.irsa_assume_role[0].json
-  max_session_duration  = var.irsa_max_session_duration
-  permissions_boundary  = var.irsa_permissions_boundary_arn
-  force_detach_policies = true
-
-  tags = merge(var.tags, var.irsa_tags)
+  policy      = data.aws_iam_policy_document.irsa[0].json # data.aws_iam_policy_document.irsa_assume_role[0].json
 }
+
+module "karpenter" {
+  source                        = "terraform-aws-modules/iam/aws//modules/iam-assumable-role-with-oidc"
+  version                       = "5.28.0"
+  create_role                   = true
+  role_name                     = local.irsa_name
+  provider_url                  = replace(var.cluster_oidc_issuer_url, "https://", "")
+  role_policy_arns              = [aws_iam_policy.karpenter.arn]
+  oidc_fully_qualified_subjects = [for sa in var.irsa_namespace_service_accounts : "system:serviceaccount:${sa}"]
+}
+
+
 
 data "aws_iam_policy_document" "irsa" {
   count = local.create_irsa ? 1 : 0
@@ -158,13 +134,6 @@ resource "aws_iam_policy" "irsa" {
   policy      = data.aws_iam_policy_document.irsa[0].json
 
   tags = var.tags
-}
-
-resource "aws_iam_role_policy_attachment" "irsa" {
-  count = local.create_irsa ? 1 : 0
-
-  role       = aws_iam_role.irsa[0].name
-  policy_arn = aws_iam_policy.irsa[0].arn
 }
 
 ################################################################################
