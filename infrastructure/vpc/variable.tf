@@ -13,14 +13,11 @@ variable "vpc_cidr" {
   type = string
 }
 
-variable "azs" {
-  description = "(Optional) List of Availiability Zones"
-  type        = list(string)
-}
+
 
 variable "common_tags" {
   description = "(Required) Resource Tag"
-  type        = map()
+  type        = map(any)
 }
 
 variable "enable_nat_gateway" {
@@ -33,4 +30,8 @@ variable "single_nat_gateway" {
   description = "(Optional) Should be true if you want to provision a single shared NAT Gateway across all of your private networks"
   default     = true
   type        = bool
+}
+
+variable "enable_karpenter_autoscaler" {
+  default = true
 }

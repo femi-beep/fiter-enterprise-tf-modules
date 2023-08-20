@@ -2,7 +2,7 @@ data "aws_availability_zones" "available" {}
 
 locals {
   name = "${var.customer}-${var.environment}-vpc"
-  azs  = var.azs ? var.azs : slice(data.aws_availability_zones.available.names, 0, 3)
+  azs  = slice(data.aws_availability_zones.available.names, 0, 3)
 
   private_tag = {
     "kubernetes.io/role/internal-elb" = 1
