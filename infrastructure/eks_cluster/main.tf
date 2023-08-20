@@ -4,11 +4,11 @@
 data "aws_caller_identity" "current" {}
 
 data "aws_eks_cluster" "cluster" {
-  name = module.eks.cluster_id
+  name = module.eks.cluster_name
 }
 
 data "aws_eks_cluster_auth" "cluster" {
-  name = module.eks.cluster_id
+  name = module.eks.cluster_name
 }
 
 provider "kubernetes" {
@@ -76,7 +76,7 @@ module "eks" {
     aws-ebs-csi-driver = {
       resolve_conflicts_on_create = "OVERWRITE"
       resolve_conflicts_on_update = "OVERWRITE"
-      service_account_role_arn = var.ebs_sci_sa_arn
+      service_account_role_arn    = module.aws_ebs_csi_iam_service_account.iam_role_arn
     }
   }
 
@@ -158,9 +158,9 @@ module "ebs_kms_key" {
   ]
 
   # Aliases
-  aliases = ["eks/${local.name}/ebs"]
+  aliases = ["eks/${local.prefix}/ebs"]
 
-  tags = local.tags
+  tags = var.common_tags
 }
 
 ##############################
@@ -210,16 +210,10 @@ resource "aws_iam_policy" "aws_ebs_csi" {
 
 module "aws_ebs_csi_iam_service_account" {
   source                        = "terraform-aws-modules/iam/aws//modules/iam-assumable-role-with-oidc"
-  version                       = "4.1.0"
+  version                       = "5.28.0"
   create_role                   = true
   role_name                     = "${local.prefix}-aws-ebs-csi"
   provider_url                  = replace(module.eks.cluster_oidc_issuer_url, "https://", "")
-  role_policy_arns              = [aws_iam_policy.aws_ebs_csi.arn]
+  role_policy_arns              = [aws_iam_policy.aws_ebs_csi.arn, "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"]
   oidc_fully_qualified_subjects = ["system:serviceaccount:kube-system:ebs-csi-controller-sa"]
-}
-
-# Attach AWS Managed Role for EBSCSI Driver
-resource "aws_iam_role_policy_attachment" "aws_ebs_csi_standard_role_attachment" {
-  role       = module.aws_ebs_csi_iam_service_account.iam_role_name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
 }

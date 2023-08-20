@@ -35,11 +35,6 @@ variable "subnets" {
   type        = list(string)
 }
 
-variable "ebs_sci_sa_arn" {
-  description = "IRSA Role for the EBS CSI Driver"
-  type        = string
-}
-
 variable "aws_auth_users" {
   description = "List of User maps to add to the aws-auth configmap"
   type        = list(string)
