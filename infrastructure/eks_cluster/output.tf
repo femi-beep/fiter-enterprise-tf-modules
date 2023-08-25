@@ -13,3 +13,7 @@ output "cluster_arn" {
 output "node_security_group_ids" {
   value = module.eks.node_security_group_id
 }
+
+output "node_security_group_id" {
+  value = module.eks.node_security_group_id
+}
