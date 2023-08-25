@@ -1,0 +1,11 @@
+replicas: 1
+serviceAccount:
+  annotations:
+    eks.amazonaws.com/role-arn: ${KARPENTER_IAM_ROLE_ARN} 
+
+settings:
+  aws:
+    clusterName: ${CLUSTER_NAME}
+    clusterEndpoint: ${CLUSTER_ENDPOINT}
+    defaultInstanceProfile: ${INSTANCE_PROFILE_NAME}
+    interruptionQueueName: Karpenter-${CLUSTER_NAME}
