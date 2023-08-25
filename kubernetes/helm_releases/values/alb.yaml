@@ -1,0 +1,10 @@
+serviceAccount:
+  create: true
+  name: aws-alb-ingress-controller-sa
+  annotations:
+    role-arn:  "arn:aws:iam::${account_id}:role/${cluster_name}-alb-controller"
+
+clusterName: ${cluster_name}
+vpcId: ${vpc_id}
+replicaCount: 1
+region: ${aws_region}
