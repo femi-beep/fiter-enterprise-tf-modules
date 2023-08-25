@@ -1,0 +1,43 @@
+apiVersion: karpenter.sh/v1alpha5
+kind: Provisioner
+metadata:
+  name: ${provisioner_name}
+  namespace: karpenter
+spec:
+  consolidation:
+    enabled: true
+  ttlSecondsUntilExpired: 86400 
+  requirements:
+    - key: "kubernetes.io/arch"
+      operator: In
+      values: ["amd64"]
+    - key: "karpenter.sh/capacity-type"
+      operator: In
+      values: ["on-demand"]
+    - key: kubernetes.io/os
+      operator: In
+      values:
+      - linux
+    - key: karpenter.k8s.aws/instance-category
+      operator: In
+      values:
+        - m
+        - t
+        - r
+    - key: karpenter.k8s.aws/instance-generation
+      operator: Gt
+      values:
+      - "2"
+  # These fields vary per cloud provider, see your cloud provider specific documentation
+  provider:
+    subnetSelector:
+      aws-ids: ${aws_subnet_ids}
+    securityGroupSelector:
+      aws-ids: ${aws_security_group_ids}
+    blockDeviceMappings:
+      - deviceName: /dev/xvda
+        ebs:
+          volumeSize: ${node_volume_size} #100Gi
+          volumeType: ${node_volume_type} # gp3
+          encrypted: ${node_encryption_enabled} # true
+          deleteOnTermination: true
