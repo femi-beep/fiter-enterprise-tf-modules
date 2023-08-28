@@ -22,6 +22,10 @@ variable "cert_manager_version" {
   default = "v1.8.0"
 }
 
+variable "enable_cluster_issuer" {
+  default = false
+}
+
 variable "nginx_ingress_enabled" {
   default = false
 }

@@ -9,7 +9,7 @@ priorityClassName: ""
 rbac:
   serviceAccount:
     annotations:
-      eks.amazonaws.com/role-arn: "arn:aws:iam::${account}:role/${cluster_name}-autoscaler"
+      eks.amazonaws.com/role-arn: "arn:aws:iam::${account_id}:role/${cluster_name}-autoscaler"
     name: "cluster-autoscaler-controller-sa"
 
 # replicaCount -- Desired number of pods

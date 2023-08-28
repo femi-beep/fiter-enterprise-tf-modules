@@ -15,7 +15,7 @@ locals {
       chart      = "cluster-autoscaler"
       version    = var.cluster_autoscaler_version
       namespace  = "kube-system"
-      values     = [templatefile("${path.module}/files/cluster-autoscaler.yaml", local.eks_helm_map)]
+      values     = [templatefile("${path.module}/values/cluster-autoscaler.yaml", local.eks_helm_map)]
     },
     metrics-server = {
       enabled    = var.metric_server_enabled
@@ -23,7 +23,7 @@ locals {
       chart      = "metrics-server"
       version    = var.metrics_server_version
       namespace  = "kube-system"
-      values     = [templatefile("${path.module}/files/metrics-server.yaml", local.eks_helm_map)]
+      values     = [templatefile("${path.module}/values/metrics-server.yaml", local.eks_helm_map)]
     },
     cert-manager = {
       enabled          = var.cert_manager_enabled
@@ -32,16 +32,16 @@ locals {
       version          = var.cert_manager_version
       namespace        = "cert-manager"
       create_namespace = true
-      values           = [file("${path.module}/files/cert-manager.yaml")]
+      values           = [file("${path.module}/values/cert-manager.yaml")]
     },
-      nginx_ingress = {
+      nginx-ingress = {
       enabled          = var.nginx_ingress_enabled
       repository       = "https://kubernetes.github.io/ingress-nginx"
       chart            = "ingress-nginx"
       version          = var.nginx_ingress_version
       namespace        = "kube-system"
       create_namespace = true
-      values           = [file("${path.module}/files/nginx-ingress.yaml")]
+      values           = [file("${path.module}/values/nginx-ingress.yaml")]
     },
       alb_ingress = {
       enabled          = var.alb_ingress_enabled
@@ -50,7 +50,7 @@ locals {
       version          = var.alb_ingress_version
       namespace        = "kube-system"
       create_namespace = true
-      values           = [file("${path.module}/files/alb.yaml")]
+      values           = [file("${path.module}/values/alb.yaml")]
     },
   }
 
@@ -71,7 +71,7 @@ resource "helm_release" "this" {
 }
 
 resource "kubernetes_manifest" "certbot_prod" {
-  count = var.cert_manager_enabled ? 1 : 0
+  count = var.cert_manager_enabled && var.enable_cluster_issuer ? 1 : 0
   manifest = {
     "apiVersion" = "cert-manager.io/v1"
     "kind"       = "ClusterIssuer"

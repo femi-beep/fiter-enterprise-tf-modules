@@ -37,13 +37,13 @@ variable "subnets" {
 
 variable "aws_auth_users" {
   description = "List of User maps to add to the aws-auth configmap"
-  type        = list(string)
+  type        = list(any)
 }
 
 variable "aws_auth_roles" {
   description = "List of role maps to add to the aws-auth configmap"
   default     = []
-  type        = list(string)
+  type        = list(any)
 }
 
 variable "cluster_endpoint_public_access" {
