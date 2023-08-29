@@ -1,5 +1,6 @@
 locals {
   db_port = "3306"
+  publicly_accessible = var.disable_rds_public_access? false : true
   tags = {
     Name    = "fineract-${var.client}-${var.environment}"
     OwnedBy = "Terraform"
@@ -70,7 +71,7 @@ module "db" {
 
   # DB subnet group
   create_db_subnet_group = true
-  subnet_ids             = var.private_subnets #module.vpc.public_subnets
+  subnet_ids             = var.rds_subnets #module.vpc.public_subnets
 
   # DB parameter group
   family = var.rds_family
@@ -80,7 +81,7 @@ module "db" {
 
   # Database Deletion Protection
   deletion_protection = var.rds_db_delete_protection
-  publicly_accessible = false # set to false to enforce it is not publicly accessible
+  publicly_accessible = local.publicly_accessible # set to false to enforce it is not publicly accessible
 
 }
 

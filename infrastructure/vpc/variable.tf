@@ -5,12 +5,12 @@ variable "customer" {
 
 variable "environment" {
   description = "(Required) Environment e.g Dev, Stg, Prod"
-  type = string
+  type        = string
 }
 
 variable "vpc_cidr" {
   description = "(Required) VPC Cidr"
-  type = string
+  type        = string
 }
 
 
@@ -34,4 +34,9 @@ variable "single_nat_gateway" {
 
 variable "enable_karpenter_autoscaler" {
   default = true
+}
+
+variable "enable_secretmanager_vpc_endpoint" {
+  description = "Enable SecretsManager VPC Endpoint if DB is in Private Subnet"
+  type        = bool
 }

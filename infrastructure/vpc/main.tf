@@ -41,10 +41,11 @@ module "vpc" {
 
 
 module "endpoints" {
+  count  = var.enable_secretmanager_vpc_endpoint ? 1 : 0
   source = "terraform-aws-modules/vpc/aws//modules/vpc-endpoints"
 
-  vpc_id             = module.vpc.vpc_id
-  create_security_group      = true
+  vpc_id                = module.vpc.vpc_id
+  create_security_group = true
 
   security_group_name_prefix = "${local.name}-vpc-endpoints-"
   security_group_description = "VPC endpoint security group"

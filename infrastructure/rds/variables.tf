@@ -107,7 +107,7 @@ variable "vpc_cidr_block" {
   type        = string
 }
 
-variable "private_subnets" {
+variable "rds_subnets" {
   description = "VPC Subnets to Deploy RDS In"
   type        = list(string)
 }
@@ -120,4 +120,8 @@ variable "intra_subnets" {
 variable "db_service_users" {
   description = "service user to create for application"
   type = list(string)
+}
+
+variable "disable_rds_public_access" {
+  
 }
