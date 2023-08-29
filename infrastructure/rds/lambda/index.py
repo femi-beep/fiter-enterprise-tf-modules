@@ -20,7 +20,17 @@ def create_secret(client, secret_name, username):
         })
         client.create_secret(
             Name=secret_name,
-            SecretString=secret
+            SecretString=secret,
+            Tags=[
+                {
+                    'Key': 'OwnedBy',
+                    'Value': 'Terraform' # should be dynamic
+                },
+                {
+                    'Key': 'Customer',
+                    'Value': 'Fiter' # should be dynamic
+                },
+            ],
         )
     except ClientError as error:
         if error.response['Error']['Code'] == 'ResourceExistsException':
@@ -43,13 +53,25 @@ def get_secret(client, secret_name):
     secret = get_secret_value_response['SecretString']
     return json.loads(secret)
 
+def delete_secret(client, secret_name):
+    print(f"attempting to Delete {secret_name}")
+    try:
+        response = client.delete_secret(
+            SecretId=secret_name,
+            ForceDeleteWithoutRecovery=True
+        )
+    except ClientError as e:
+        raise e
+    return True
+
+
 
 queries = {
     "CREATE_DB": "CREATE DATABASE IF NOT EXISTS `%s`;",
     "CREATE_USER": "CREATE USER %s@'%%' IDENTIFIED BY %s;",
     "GRANT_SERVICE": "GRANT ALL PRIVILEGES ON %s.* TO %s@'%%';",
     "FLUSH": "FLUSH PRIVILEGES;",
-    "DROP_USER": "DROP USER %s;",
+    "DROP_USER": "DROP USER IF EXISTS %s;",
     "USER_EXIST": "SELECT user FROM mysql.user WHERE user = %s;"
 }
 
@@ -118,6 +140,7 @@ def lambda_handler(event, context):
                 conn.commit()
 
         elif ACTION == "delete":
+            delete_secret(client, SECRET_NAME)
             # Delete User
             DROP_USER_SQL = queries["DROP_USER"]
             cursor.execute(DROP_USER_SQL, (USER_NAME))
@@ -126,7 +149,7 @@ def lambda_handler(event, context):
             logger.info(f"No Action to take'")
 
     except pymysql.MySQLError as e:
-        logger.error("Error", e)
+        logger.error(f"Error: {e}")
     finally:
         cursor.close()
         conn.close()
@@ -134,5 +157,3 @@ def lambda_handler(event, context):
     return {
         "statusCode": 200
     }
-
-lambda_handler('event', 'context')
