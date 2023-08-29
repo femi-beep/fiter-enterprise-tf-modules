@@ -1,7 +1,3 @@
-variable "password_arn" {
-  description = "Password for the root account of db should be 8 char long"
-  type        = string
-}
 variable "rds_family" {
   description = "RDS family like mysql, aurora with version"
   default     = "mysql8.0"
@@ -27,12 +23,11 @@ variable "engine_version" {
 variable "initial_db_name" {
   description = "Name of the db created initially"
   type        = string
-  default     = ""
 }
 
 variable "db_storage_size" {
   description = "Size of RDS storage in GB"
-  default     = "5"
+  default     = "50"
   type        = number
 }
 variable "instance_class" {
@@ -115,4 +110,14 @@ variable "vpc_cidr_block" {
 variable "private_subnets" {
   description = "VPC Subnets to Deploy RDS In"
   type        = list(string)
+}
+
+variable "intra_subnets" {
+  description = "VPC Subnets to Deploy Lambda Non accessible In"
+  type        = list(string)
+}
+
+variable "db_service_users" {
+  description = "service user to create for application"
+  type = list(string)
 }
