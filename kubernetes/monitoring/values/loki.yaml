@@ -1,0 +1,76 @@
+promtail:
+ enabled: true
+ pipelineStages:
+  - cri: {}
+  - json:
+    expressions:
+     is_even: is_even
+     level: level
+     version: version
+
+grafana:
+ enabled: false
+
+loki:
+  isDefault: false
+  auth_enabled: false
+  commonConfig:
+    path_prefix: /var/loki
+    replication_factor: 1
+  compactor:
+    apply_retention_interval: 1h
+    compaction_interval: 5m
+    retention_delete_worker_count: 500
+    retention_enabled: true
+    shared_store: s3
+    working_directory: /data/compactor
+  config:
+    ruler:
+      notification_timeout: 1m
+      rule_path: /tmp/loki/rules-temp
+      ring:
+        kvstore:
+          store: inmemory
+      enable_api: true
+      alertmanager_url: http://kube-prometheus-stack-alertmanager:9093
+    schema_config:
+      configs:
+      - from: 2020-05-15
+        store: boltdb-shipper
+        object_store: s3
+        schema: v11
+        index:
+          period: 24h
+          prefix: loki_index_
+    storage_config:
+      aws:
+        region: ${aws_region}
+        bucketnames: ${aws_bucket}
+        s3forcepathstyle: false
+        #s3forcepathstyle: true  <-- This is the main culprit; comment it out ? -? https://github.com/grafana/loki/issues/7024
+      boltdb_shipper:
+        shared_store: s3
+        cache_ttl: 24h
+  serviceAccount:
+    create: true
+    name: ${service_account_name}
+    annotations:
+       eks.amazonaws.com/role-arn: ${eks_log_role}
+  write:
+     replicas: 2
+  read:
+    replicas: 1
+
+singleBinary:
+  replicas: 1
+  extraVolumeMounts:
+    - name: loki-rules-generated
+      mountPath: /rules
+    - name: loki-rules
+      mountPath: /tmp/loki/rules-temp
+  extraVolumes:
+    - name: loki-rules
+      configMap:
+        name: loki-alerting-rules
+    - name: loki-rules-generated
+      emptyDir: {}

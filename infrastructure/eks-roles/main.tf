@@ -40,6 +40,13 @@ locals {
       role_policy_arn     = [aws_iam_policy.external_dns.arn]
       enabled             = var.enable_external_dns
     },
+    eks-log = {
+      role_name           = "${var.eks_cluster_name}-eks-logs"
+      namespace           = var.monitoring_namespace
+      serviceaccount_name = var.monitoring_sa_name
+      role_policy_arn     = [aws_iam_policy.eks_logger.arn]
+      enabled             = var.enable_eks_log_bucket
+    },
   }
 }
 

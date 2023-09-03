@@ -217,3 +217,22 @@ module "aws_ebs_csi_iam_service_account" {
   role_policy_arns              = [aws_iam_policy.aws_ebs_csi.arn, "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"]
   oidc_fully_qualified_subjects = ["system:serviceaccount:kube-system:ebs-csi-controller-sa"]
 }
+
+module "eks_log_bucket" {
+  source = "terraform-aws-modules/s3-bucket/aws"
+  version = "3.15.1"
+  bucket = format(
+    "%s-%s-%s",
+    var.eks_logging_bucketname,
+    local.cluster_name,
+    data.aws_caller_identity.current.account_id
+  )
+  acl    = "private"
+
+  control_object_ownership = true
+  object_ownership         = "ObjectWriter"
+
+  versioning = {
+    enabled = true
+  }
+}

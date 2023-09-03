@@ -57,3 +57,9 @@ variable "cluster_endpoint_public_access_cidrs" {
   default = [ "0.0.0.0/0" ]
   type = list(string)
 }
+
+
+variable "eks_logging_bucketname" {
+  default = "eks-logs"
+  description = "AWS Bucket Name to Send EKS Logs"
+}

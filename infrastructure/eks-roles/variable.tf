@@ -93,3 +93,23 @@ variable "eks_cluster_name" {
   type        = string
   description = "(Required) EKS Cluster Name"
 }
+
+variable "eks_log_bucket" {
+  default = ""
+  description = "Bucket ARN to send EKS Logs"
+}
+
+variable "enable_eks_log_bucket" {
+  default = true
+  description = "Enabled EKS Bucket Log Role"
+}
+
+variable "monitoring_namespace" {
+  default = "monitoring"
+  description = "Monitoring Namespace where Log System is deployed"
+}
+
+variable "monitoring_sa_name" {
+  default = "eks-log-sa"
+  description = "Service Account Name for EKS logs"
+}

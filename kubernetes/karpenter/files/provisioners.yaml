@@ -24,6 +24,12 @@ spec:
         - m
         - t
         - r
+        - c
+    - key: karpenter.k8s.aws/instance-size
+      operator: In
+      values:
+        - large
+        - xlarge
     - key: karpenter.k8s.aws/instance-generation
       operator: Gt
       values:

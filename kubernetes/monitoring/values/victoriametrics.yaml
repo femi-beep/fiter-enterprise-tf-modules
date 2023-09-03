@@ -1,0 +1,348 @@
+victoria-metrics-operator:
+  enabled: true
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+## -- Create default rules for monitoring the cluster
+defaultRules:
+  create: true
+  rules:
+    etcd: false
+    general: true
+    k8s: true
+    kubeApiserver: false
+    kubeApiserverAvailability: false
+    kubeApiserverBurnrate: false
+    kubeApiserverHistogram: true
+    kubeApiserverSlos: true
+    kubelet: true
+    kubePrometheusGeneral: true
+    kubePrometheusNodeRecording: true
+    kubernetesApps: true
+    kubernetesResources: true
+    kubernetesStorage: true
+    kubernetesSystem: true
+    kubeScheduler: false
+    kubeStateMetrics: true
+    network: true
+    node: true
+    vmagent: true
+    vmsingle: true
+    vmhealth: true
+    alertmanager: true
+
+# -- Configures vmsingle params
+vmsingle:
+  annotations: {}
+  enabled: true
+  # spec for VMSingle crd
+  # https://docs.victoriametrics.com/operator/api.html#vmsinglespec
+  spec:
+    retentionPeriod: "14"
+    replicaCount: 1
+    storage:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 20Gi
+  ingress:
+    enabled: false
+    ingressClassName: nginx
+    annotations:
+      {}
+      # kubernetes.io/ingress.class: nginx
+      # kubernetes.io/tls-acme: "true"
+    path: /
+    pathType: Prefix
+
+    hosts:
+      - vmsingle.domain.com
+    tls: []
+    #  - secretName: vmsingle-ingress-tls
+    #    hosts:
+    #      - vmsingle.domain.com
+
+alertmanager:
+  enabled: true
+
+  config:
+    global:
+      resolve_timeout: 5m
+      slack_api_url: "http://slack:30500/"
+    templates:
+      - "/etc/vm/configs/**/*.tmpl"
+    route:
+      group_by: ["alertgroup", "job"]
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 12h
+      receiver: "slack-monitoring"
+      routes:
+        - matchers:
+            - code_owner_channel!=""
+            - severity=~"info|warning|critical"
+          group_by: ["code_owner_channel", "alertgroup", "job"]
+          receiver: slack-code-owners
+        ###################################################
+        ## Standard on-call routes
+        - matchers:
+            - severity=~"info|warning|critical"
+          receiver: slack-monitoring
+          continue: true
+
+    inhibit_rules:
+      - target_matchers:
+          - severity=~"warning|info"
+        source_matchers:
+          - severity=critical
+        equal:
+          - cluster
+          - namespace
+          - alertname
+      - target_matchers:
+          - severity=info
+        source_matchers:
+          - severity=warning
+        equal:
+          - cluster
+          - namespace
+          - alertname
+      - target_matchers:
+          - severity=info
+        source_matchers:
+          - alertname=InfoInhibitor
+        equal:
+          - cluster
+          - namespace
+
+    receivers:
+      - name: "slack-monitoring"
+        slack_configs:
+          - channel: "#channel"
+            send_resolved: true
+            title: '{{ template "slack.monzo.title" . }}'
+            icon_emoji: '{{ template "slack.monzo.icon_emoji" . }}'
+            color: '{{ template "slack.monzo.color" . }}'
+            text: '{{ template "slack.monzo.text" . }}'
+            actions:
+              - type: button
+                text: "Runbook :green_book:"
+                url: "{{ (index .Alerts 0).Annotations.runbook_url }}"
+              - type: button
+                text: "Query :mag:"
+                url: "{{ (index .Alerts 0).GeneratorURL }}"
+              - type: button
+                text: "Dashboard :grafana:"
+                url: "{{ (index .Alerts 0).Annotations.dashboard }}"
+              - type: button
+                text: "Silence :no_bell:"
+                url: '{{ template "__alert_silence_link" . }}'
+              - type: button
+                text: '{{ template "slack.monzo.link_button_text" . }}'
+                url: "{{ .CommonAnnotations.link_url }}"
+      - name: slack-code-owners
+        slack_configs:
+          - channel: "#{{ .CommonLabels.code_owner_channel }}"
+            send_resolved: true
+            title: '{{ template "slack.monzo.title" . }}'
+            icon_emoji: '{{ template "slack.monzo.icon_emoji" . }}'
+            color: '{{ template "slack.monzo.color" . }}'
+            text: '{{ template "slack.monzo.text" . }}'
+            actions:
+              - type: button
+                text: "Runbook :green_book:"
+                url: "{{ (index .Alerts 0).Annotations.runbook }}"
+              - type: button
+                text: "Query :mag:"
+                url: "{{ (index .Alerts 0).GeneratorURL }}"
+              - type: button
+                text: "Dashboard :grafana:"
+                url: "{{ (index .Alerts 0).Annotations.dashboard }}"
+              - type: button
+                text: "Silence :no_bell:"
+                url: '{{ template "__alert_silence_link" . }}'
+              - type: button
+                text: '{{ template "slack.monzo.link_button_text" . }}'
+                url: "{{ .CommonAnnotations.link_url }}"
+  monzoTemplate:
+    enabled: true
+
+  ingress:
+    enabled: false
+    # ingressClassName: nginx
+    annotations:
+      {}
+      # kubernetes.io/ingress.class: nginx
+      # kubernetes.io/tls-acme: "true"
+    labels: {}
+    path: /
+    # pathType is only for k8s > 1.19
+    pathType: Prefix
+
+    hosts:
+      - alertmanager.domain.com
+    tls: []
+    #  - secretName: alertmanager-ingress-tls
+    #    hosts:
+    #      - alertmanager.domain.com
+
+vmalert:
+  annotations: {}
+  enabled: true
+  remoteWriteVMAgent: false
+  spec:
+    selectAllByDefault: true
+    image:
+      tag: v1.93.0
+    evaluationInterval: 15s
+    externalLabels: {}
+
+vmagent:
+  enabled: true
+  annotations: {}
+  additionalRemoteWrites:
+    []
+    #- url: http://some-remote-write/api/v1/write
+  # spec for VMAgent crd
+  # https://docs.victoriametrics.com/operator/api.html#vmagentspec
+  spec:
+    selectAllByDefault: true
+    image:
+      tag: v1.93.0
+    scrapeInterval: 25s
+    externalLabels:
+      cluster: cluster-name
+    extraArgs:
+      promscrape.streamParse: "true"
+
+#################################################
+###              dependencies               #####
+#################################################
+# Grafana dependency chart configuration. For possible values refer to https://github.com/grafana/helm-charts/tree/main/charts/grafana#configuration
+grafana:
+  enabled: true
+  ## all values for grafana helm chart can be specified here
+  sidecar:
+    datasources:
+      enabled: true
+      createVMReplicasDatasources: false
+      # JSON options for VM datasources
+      # See https://grafana.com/docs/grafana/latest/administration/provisioning/#json-data
+      jsonData: {}
+      #  timeInterval: "1m"
+    dashboards:
+      additionalDashboardLabels: {}
+      additionalDashboardAnnotations: {}
+      enabled: true
+      multicluster: false
+
+  ## ForceDeployDatasource Create datasource configmap even if grafana deployment has been disabled
+  forceDeployDatasource: false
+
+  ## Configure additional grafana datasources (passed through tpl)
+  ## ref: http://docs.grafana.org/administration/provisioning/#datasources
+  additionalDataSources: 
+    - name: Loki
+      type: loki
+      isDefault: false
+      access: proxy
+      url: http://loki-stack:3100
+      version: 1
+
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: "default"
+          orgId: 1
+          folder: ""
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/default
+
+  dashboards:
+    default:
+      nodeexporter:
+        gnetId: 1860
+        revision: 22
+        datasource: VictoriaMetrics
+
+  defaultDashboardsTimezone: utc
+
+  ingress:
+    enabled: false
+    # ingressClassName: nginx
+    annotations:
+      {}
+      # kubernetes.io/ingress.class: nginx
+      # kubernetes.io/tls-acme: "true"
+    path: /
+    pathType: Prefix
+
+    hosts:
+      - grafana.domain.com
+    tls: []
+    #  - secretName: grafana-ingress-tls
+    #    hosts:
+    #      - grafana.domain.com
+
+  vmServiceScrape:
+    enabled: true
+
+# prometheus-node-exporter dependency chart configuration. For possible values refer to https://github.com/prometheus-community/helm-charts/blob/main/charts/prometheus-node-exporter/values.yaml
+prometheus-node-exporter:
+  enabled: true
+  vmServiceScrape:
+    enabled: true
+    spec:
+      jobLabel: jobLabel
+      endpoints:
+        - port: metrics
+          metricRelabelConfigs:
+            - action: drop
+              source_labels: [mountpoint]
+              regex: "/var/lib/kubelet/pods.+"
+
+kube-state-metrics:
+  enabled: true
+
+kubelet:
+  enabled: true
+
+# -- Component scraping the kube api server
+kubeApiServer:
+  enabled: false
+
+# -- Component scraping the kube controller manager
+kubeControllerManager:
+  enabled: false
+
+# -Component scraping kubeDns. Use either this or coreDns
+kubeDns:
+  enabled: false
+
+# -- Component scraping coreDns. Use either this or kubeDns
+coreDns:
+  enabled: true
+
+## Component scraping etcd
+kubeEtcd:
+  enabled: false
+
+## Component scraping kube scheduler
+kubeScheduler:
+  enabled: false
+
+## Component scraping kube proxy
+kubeProxy:
+  enabled: true
+
+## install vm operator crds
+crds:
+  enabled: true
