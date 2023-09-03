@@ -47,6 +47,13 @@ locals {
       role_policy_arn     = [aws_iam_policy.eks_logger.arn]
       enabled             = var.enable_eks_log_bucket
     },
+    external-secret = {
+      role_name           = "${var.eks_cluster_name}-eks-external-secrets"
+      namespace           = "kube-system"
+      serviceaccount_name = var.external_secret_sa_name
+      role_policy_arn     = [aws_iam_policy.external_secret.arn]
+      enabled             = var.eks_external_secret_enabled
+    }
   }
 }
 

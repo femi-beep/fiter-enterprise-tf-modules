@@ -95,21 +95,37 @@ variable "eks_cluster_name" {
 }
 
 variable "eks_log_bucket" {
-  default = ""
+  default     = ""
   description = "Bucket ARN to send EKS Logs"
+  type        = string
 }
 
 variable "enable_eks_log_bucket" {
-  default = true
+  default     = true
   description = "Enabled EKS Bucket Log Role"
+  type        = bool
 }
 
 variable "monitoring_namespace" {
-  default = "monitoring"
+  default     = "monitoring"
   description = "Monitoring Namespace where Log System is deployed"
+  type        = string
 }
 
 variable "monitoring_sa_name" {
-  default = "eks-log-sa"
+  default     = "eks-log-sa"
   description = "Service Account Name for EKS logs"
+  type        = string
+}
+
+variable "external_secret_sa_name" {
+  default     = "external-secrets-sa"
+  description = "Service Account Name for External Secrets"
+  type        = string
+}
+
+variable "eks_external_secret_enabled" {
+  default     = false
+  description = "Enable External Secrets IAM Role"
+  type        = bool
 }
