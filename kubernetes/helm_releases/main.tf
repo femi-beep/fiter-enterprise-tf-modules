@@ -181,6 +181,7 @@ resource "kubernetes_manifest" "secretmanagerstore" {
       }
     }
   }
+  depends_on = [helm_release.this]
 }
 
 
@@ -209,4 +210,5 @@ resource "kubernetes_manifest" "parameterstore" {
       }
     }
   }
+  depends_on = [helm_release.this]
 }

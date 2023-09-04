@@ -43,6 +43,5 @@ resource "kubectl_manifest" "karpenter_provisioner" {
     node_volume_size        = lookup(each.value, "node_volume_size", "100Gi")
     node_volume_type        = lookup(each.value, "node_volume_type", "gp3")
     node_encryption_enabled = lookup(each.value, "node_encryption_enabled", true)
-    # instance_category       = lookup(each.value, "instance_category", ["m", "r", "t"])
   })
 }

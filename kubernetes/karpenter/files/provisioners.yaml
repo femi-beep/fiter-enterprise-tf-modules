@@ -43,7 +43,7 @@ spec:
     blockDeviceMappings:
       - deviceName: /dev/xvda
         ebs:
-          volumeSize: ${node_volume_size} #100Gi
-          volumeType: ${node_volume_type} # gp3
-          encrypted: ${node_encryption_enabled} # true
+          volumeSize: ${node_volume_size}
+          volumeType: ${node_volume_type}
+          encrypted: ${node_encryption_enabled}
           deleteOnTermination: true
