@@ -116,6 +116,19 @@ resource "kubernetes_manifest" "certbot_prod" {
 # Storage Class changes (make gp2 not default, add gp3 as default, and gp3-kms-enc for encrypted
 # ------------------------------------------------------------------------------------------------
 # gp3 storage class for cheaper storage
+resource "kubernetes_annotations" "change_default_storage_class" {
+  count = var.enable_gp3_storage ? 1 : 0
+  api_version = "storage.k8s.io/v1"
+  kind = "StorageClass"
+  metadata {
+    name = "gp2"
+  }
+  annotations = {
+    "storageclass.kubernetes.io/is-default-class" = "false"
+  }
+  force = true
+}
+
 resource "kubernetes_manifest" "gp3" {
   count = var.enable_gp3_storage ? 1 : 0
   manifest = {
@@ -123,6 +136,9 @@ resource "kubernetes_manifest" "gp3" {
     "kind"       = "StorageClass"
     "metadata" = {
       "name" = "gp3"
+      "annotations" = {
+        "storageclass.kubernetes.io/is-default-class" = "true"
+      }
     }
     "provisioner" : "ebs.csi.aws.com"
     "parameters" = {
@@ -132,6 +148,9 @@ resource "kubernetes_manifest" "gp3" {
     "reclaimPolicy"        = "Delete"
     "allowVolumeExpansion" = true
   }
+  depends_on = [
+    kubernetes_annotations.change_default_storage_class
+  ]
 }
 
 # ------------------------------------------------------------------------------------------------
