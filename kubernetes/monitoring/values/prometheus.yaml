@@ -26,6 +26,12 @@ kubeControllerManager:
   enabled: false
 
 grafana:
+  resources:
+    limits:
+      memory: 500Mi
+    requests:
+      cpu: 200m
+      memory: 400Mi
   # adminPassword: add_grafana_password
   forceDeployDashboards: true
 
@@ -124,3 +130,28 @@ prometheus:
             requests:
               storage: 100Gi
 
+
+prometheus-node-exporter:
+  resources:
+    limits:
+      cpu: 200m
+      memory: 200Mi
+    requests:
+      cpu: 100m
+      memory: 100Mi
+
+prometheusOperator:
+  resources: 
+    limits:
+      memory: 200Mi
+    requests:
+      cpu: 100m
+      memory: 100Mi
+
+kube-state-metrics:
+  resources: 
+    limits:
+      memory: 200Mi
+    requests:
+      cpu: 100m
+      memory: 100Mi
