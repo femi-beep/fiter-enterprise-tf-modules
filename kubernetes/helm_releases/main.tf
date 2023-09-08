@@ -58,7 +58,7 @@ locals {
       repository       = "https://charts.external-secrets.io"
       chart            = "external-secrets"
       version          = var.external_secret_version
-      namespace        = "kube-system"
+      namespace        = var.external_secrets_namespace
       create_namespace = true
       values           = [templatefile("${path.module}/values/external-secret.yaml", local.eks_helm_map)]
     },
@@ -156,6 +156,28 @@ resource "kubernetes_manifest" "gp3" {
 # ------------------------------------------------------------------------------------------------
 # External Secret Store
 # ------------------------------------------------------------------------------------------------
+resource "kubernetes_service_account" "external_secret_irsa" {
+  count = var.external_secret_enabled && var.external_aws_secret_manager_store_enabled ? 1 : 0
+  metadata {
+    name = "external-secrets-irsa"
+    namespace = var.external_secrets_namespace
+    annotations = {
+      "eks.amazonaws.com/role-arn" =  local.eks_helm_map["external_secret_sa_role"]
+    }
+  }
+  secret {
+    name = "${kubernetes_secret.external_secret_irsa[0].metadata.0.name}"
+  }
+}
+
+resource "kubernetes_secret" "external_secret_irsa" {
+  count = var.external_secret_enabled && var.external_aws_secret_manager_store_enabled ? 1 : 0
+  metadata {
+    name = "external-secrets-irsa"
+    namespace = var.external_secrets_namespace
+  }
+}
+
 resource "kubernetes_manifest" "secretmanagerstore" {
   count = var.external_secret_enabled && var.external_aws_secret_manager_store_enabled ? 1 : 0
   manifest = {
@@ -172,8 +194,8 @@ resource "kubernetes_manifest" "secretmanagerstore" {
           "auth" = {
             "jwt" = {
               "serviceAccountRef" = {
-                "name"      = "external-secrets-sa"
-                "namespace" = "kube-system"
+                "name"      = "external-secrets-irsa"
+                "namespace" = var.external_secrets_namespace
               }
             }
           }
@@ -201,8 +223,8 @@ resource "kubernetes_manifest" "parameterstore" {
           "auth" = {
             "jwt" = {
               "serviceAccountRef" = {
-                "name"      = "external-secrets-sa"
-                "namespace" = "kube-system"
+                "name"      = "external-secrets-irsa"
+                "namespace" = var.external_secrets_namespace
               }
             }
           }
@@ -210,5 +232,8 @@ resource "kubernetes_manifest" "parameterstore" {
       }
     }
   }
-  depends_on = [helm_release.this]
+  depends_on = [
+    helm_release.this,
+    # kubernetes_service_account.external_secret_irsa
+  ]
 }

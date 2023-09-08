@@ -109,3 +109,9 @@ variable "external_aws_secret_manager_store_enabled" {
   description = "Enable AWS Secret Manager Store Integration"
   type        = bool
 }
+
+variable "external_secrets_namespace" {
+  default     = "kube-system"
+  description = "Kubernetes Namespace to Deploy External Secrets"
+  type        = string
+}

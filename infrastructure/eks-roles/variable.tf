@@ -119,7 +119,7 @@ variable "monitoring_sa_name" {
 }
 
 variable "external_secret_sa_name" {
-  default     = "external-secrets-sa"
+  default     = "*"
   description = "Service Account Name for External Secrets"
   type        = string
 }
