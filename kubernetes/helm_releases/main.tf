@@ -1,7 +1,7 @@
 data "aws_region" "current" {}
 data "aws_caller_identity" "current" {}
 
-locals {
+locals {  
   eks_helm_map = {
     aws_region              = data.aws_region.current.name
     vpc_id                  = var.vpc_id
@@ -9,6 +9,7 @@ locals {
     account_id              = data.aws_caller_identity.current.account_id
     external_secret_sa_role = var.service_account_arns["external-secret"]
   }
+
   helm_releases = {
     cluster-autoscaler = {
       enabled    = var.cluster_autoscaler_enabled
@@ -61,9 +62,8 @@ locals {
       namespace        = var.external_secrets_namespace
       create_namespace = true
       values           = [templatefile("${path.module}/values/external-secret.yaml", local.eks_helm_map)]
-    },
+    }
   }
-
   enabled_helm_releases = { for key, value in local.helm_releases : key => value if value.enabled == true }
 }
 
@@ -117,9 +117,9 @@ resource "kubernetes_manifest" "certbot_prod" {
 # ------------------------------------------------------------------------------------------------
 # gp3 storage class for cheaper storage
 resource "kubernetes_annotations" "change_default_storage_class" {
-  count = var.enable_gp3_storage ? 1 : 0
+  count       = var.enable_gp3_storage ? 1 : 0
   api_version = "storage.k8s.io/v1"
-  kind = "StorageClass"
+  kind        = "StorageClass"
   metadata {
     name = "gp2"
   }
@@ -159,21 +159,21 @@ resource "kubernetes_manifest" "gp3" {
 resource "kubernetes_service_account" "external_secret_irsa" {
   count = var.external_secret_enabled && var.external_aws_secret_manager_store_enabled ? 1 : 0
   metadata {
-    name = "external-secrets-irsa"
+    name      = "external-secrets-irsa"
     namespace = var.external_secrets_namespace
     annotations = {
-      "eks.amazonaws.com/role-arn" =  local.eks_helm_map["external_secret_sa_role"]
+      "eks.amazonaws.com/role-arn" = local.eks_helm_map["external_secret_sa_role"]
     }
   }
   secret {
-    name = "${kubernetes_secret.external_secret_irsa[0].metadata.0.name}"
+    name = kubernetes_secret.external_secret_irsa[0].metadata.0.name
   }
 }
 
 resource "kubernetes_secret" "external_secret_irsa" {
   count = var.external_secret_enabled && var.external_aws_secret_manager_store_enabled ? 1 : 0
   metadata {
-    name = "external-secrets-irsa"
+    name      = "external-secrets-irsa"
     namespace = var.external_secrets_namespace
   }
 }

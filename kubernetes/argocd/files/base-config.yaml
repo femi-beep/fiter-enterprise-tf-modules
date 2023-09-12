@@ -1,0 +1,28 @@
+global:
+  logging:
+    level: debug
+server:
+  logLevel: debug
+  serviceAccount:
+    annotations:
+      eks.amazonaws.com/role-arn: ${argocd_role_arn}
+  %{~ if argocd_ingress_enabled ~}
+  ingress:
+    # -- Enable an ingress resource for the Argo CD server
+    enabled: ${argocd_ingress_enabled}
+    # -- Additional ingress annotations
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-issuer
+    # -- Additional ingress labels
+    hosts:
+      - ${argocd_domain}
+    tls:
+      - secretName: argocd-tls-certificate
+        hosts:
+          - ${argocd_domain}
+    https: true
+  %{~ endif ~}
+controller:
+  serviceAccount:
+    annotations:
+      eks.amazonaws.com/role-arn: ${argocd_role_arn}

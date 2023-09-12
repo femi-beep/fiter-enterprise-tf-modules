@@ -65,7 +65,7 @@ variable "alb_ingress_version" {
 }
 
 variable "vpc_id" {
-  type = string
+  type        = string
   description = "VPC ID to Deploy Loadbalancer for ALB ingress (Specific to AWS)"
 }
 

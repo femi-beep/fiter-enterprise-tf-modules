@@ -1,0 +1,60 @@
+%{~ if length(applications) > 0 ~}
+applications:
+%{~ for application in applications}
+- name: ${application["app_name"]}
+  namespace: argocd
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
+  project: "default"
+  source:
+    repoURL: ${application["repository_url"]}
+    path: ${application["repo_path"]}
+    targetRevision: ${application["branch"]}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: '*'
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    retry:
+      limit: 2 
+      backoff:
+        duration: 5s
+        factor: 2 
+        maxDuration: 3m
+%{endfor}
+%{~ endif ~}
+
+%{~ if length(projects) > 0 ~}
+projects:
+%{~ for project in projects}
+- name: ${project["project_name"]}
+  namespace: argocd
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
+  description: ${project["project_description"]}
+  sourceRepos:
+  - '*'
+  destinations:
+    - name: ${project["destination_server"]}
+      namespace: ${project["destination_namespace"]}
+      server: '*'
+    - name: in-cluster
+      namespace: argocd
+      server: 'https://kubernetes.default.svc'
+  namespaceResourceBlacklist:
+  - group: ''
+    kind: ResourceQuota
+  - group: ''
+    kind: LimitRange
+  - group: ''
+    kind: NetworkPolicy
+  namespaceResourceWhitelist:
+  - group: '*'
+    kind: '*'
+  clusterResourceWhitelist:
+  - group: '*'
+    kind: '*'
+%{endfor}
+%{~ endif ~}
