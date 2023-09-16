@@ -11,12 +11,14 @@ logger.setLevel(logging.INFO)
 
 def create_secret(client, secret_name, username):
     try:
-        password = client.get_random_password(
-            PasswordLength=16
+        randomPassword = client.get_random_password(
+            PasswordLength=16,
+            ExcludePunctuation=True
         )
+        password = randomPassword["RandomPassword"]
         secret = json.dumps({
             "username": username,
-            "password": password["RandomPassword"]
+            "password": password
         })
         client.create_secret(
             Name=secret_name,
@@ -24,7 +26,7 @@ def create_secret(client, secret_name, username):
             Tags=[
                 {
                     'Key': 'OwnedBy',
-                    'Value': 'Terraform' # should be dynamic
+                    'Value': 'Terraform'
                 },
                 {
                     'Key': 'Customer',
@@ -67,7 +69,7 @@ def delete_secret(client, secret_name):
 
 
 queries = {
-    "CREATE_DB": "CREATE DATABASE IF NOT EXISTS `%s`;",
+    "CREATE_DB": "CREATE DATABASE IF NOT EXISTS %s;",
     "CREATE_USER": "CREATE USER %s@'%%' IDENTIFIED BY %s;",
     "GRANT_SERVICE": "GRANT ALL PRIVILEGES ON %s.* TO %s@'%%';",
     "FLUSH": "FLUSH PRIVILEGES;",
@@ -86,8 +88,9 @@ def createConnection(db_secret, host, db_name):
 
 def lambda_handler(event, context):
     ACTION = event["tf"]["action"]
+    DB_IDENTIFIER = os.environ["DB_IDENTIFIER"]
     USER_NAME = f'{event["USERNAME"]}-user' # fiter-dev-something
-    SECRET_NAME = f'fineract-{USER_NAME}-secret' # fineract-default-service-user
+    SECRET_NAME = f'{DB_IDENTIFIER}-{USER_NAME}-secret' # fineract-default-service-user
     FINERACT_DEFAULT = "fineract_default"
     FINERACT_TENANT = "fineract_tenants"
     REGION_NAME = os.environ['AWS_REGION']
@@ -101,7 +104,6 @@ def lambda_handler(event, context):
         region_name=REGION_NAME
     )
 
-    
     logger.info('Calculated result of Some action')
 
     db_secret = get_secret(client, ADMIN_SECRET_NAME)
@@ -112,8 +114,8 @@ def lambda_handler(event, context):
 
         if ACTION == "create":
             CREATE_DB_SQL = queries["CREATE_DB"]
-            cursor.execute(CREATE_DB_SQL, (FINERACT_DEFAULT,))
-            cursor.execute(CREATE_DB_SQL, (FINERACT_TENANT,))
+            cursor.execute("CREATE DATABASE IF NOT EXISTS fineract_default;")
+            cursor.execute("CREATE DATABASE IF NOT EXISTS fineract_tenants;")
 
             cursor.execute(queries["USER_EXIST"], (USER_NAME,))
             user_exists = cursor.fetchone() is not None
@@ -121,9 +123,9 @@ def lambda_handler(event, context):
             if user_exists:
                 logger.info(f"User '{USER_NAME}' already exists.")
             else:
-                # pass
                 user_secret = create_secret(client, SECRET_NAME, USER_NAME)
                 # Create a new user
+
                 CREATE_USER_SQL = queries["CREATE_USER"]
                 cursor.execute(CREATE_USER_SQL, (USER_NAME, user_secret))
                 logger.info(f"User '{USER_NAME}' created.")
@@ -155,5 +157,5 @@ def lambda_handler(event, context):
         conn.close()
         
     return {
-        "statusCode": 200
+        "secretname": SECRET_NAME
     }

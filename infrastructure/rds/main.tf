@@ -5,6 +5,7 @@ locals {
     Name    = "fineract-${var.client}-${var.environment}"
     OwnedBy = "Terraform"
   }
+  db_identifier = "${var.client}-${var.environment}"
 }
 
 resource "aws_security_group" "service" {
@@ -44,7 +45,7 @@ resource "aws_security_group" "service" {
 module "db" {
   source                      = "terraform-aws-modules/rds/aws"
   version                     = "6.1.1"
-  identifier                  = "fiter-${var.client}-${var.environment}"
+  identifier                  = "fiter-${var.client}-${var.environment}" #remove fiter name
   engine                      = var.engine
   engine_version              = var.engine_version
   instance_class              = var.instance_class
@@ -104,6 +105,7 @@ module "credential_generator" {
     ADMIN_SECRET_NAME = module.db.db_instance_master_user_secret_arn
     DB_HOST           = module.db.db_instance_address
     ADMIN_DB_NAME     = var.initial_db_name
+    DB_IDENTIFIER     = local.db_identifier
   }
 
   attach_policy_json = true
@@ -118,12 +120,7 @@ module "credential_generator" {
                     "secretsmanager:GetSecretValue",
                     "secretsmanager:DeleteSecret"
                 ],
-                "Resource": ["*"],
-                "Condition": {
-                  "StringEquals": {
-                    "secretsmanager:ResourceTag/Customer": "Fiter"
-                  }
-                }
+                "Resource": ["*"]
             },
             {
                 "Effect": "Allow",
@@ -169,6 +166,11 @@ resource "aws_lambda_invocation" "db_service" {
   lifecycle_scope = "CRUD"
 }
 
+output "rds_secret" {
+  value = {
+    for key, secret in aws_lambda_invocation.db_service: key => lookup(jsondecode(secret.result), "secretname", "")
+  }
+}
 # improvements to be done
 # ability to create new db
 # add output of ARN to function to avoid user having to check for arn
