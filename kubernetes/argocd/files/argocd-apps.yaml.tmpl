@@ -37,12 +37,8 @@ projects:
   sourceRepos:
   - '*'
   destinations:
-    - name: ${project["destination_server"]}
+    - server: ${project["destination_server"]}
       namespace: ${project["destination_namespace"]}
-      server: '*'
-    - name: in-cluster
-      namespace: argocd
-      server: 'https://kubernetes.default.svc'
   namespaceResourceBlacklist:
   - group: ''
     kind: ResourceQuota

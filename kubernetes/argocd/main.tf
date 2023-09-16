@@ -1,6 +1,4 @@
-data "aws_caller_identity" "current" {
-  
-}
+data "aws_caller_identity" "current" {}
 
 locals {
   eks_helm_map = {
@@ -18,7 +16,7 @@ locals {
       version          = var.argocd_version
       namespace        = var.k8s_namespace
       create_namespace = true
-      setvalues         = [] # annotations
+      setvalues        = [] # annotations
       values = [
         templatefile("${path.module}/files/base-config.yaml", local.eks_helm_map),
         # templatefile("${path.module}/files/argocd/rbac-policy.yaml", local.eks_helm_map),
@@ -54,7 +52,7 @@ resource "helm_release" "this" {
 
   create_namespace = true
   dynamic "set" {
-    for_each = {for set in lookup(each.value, "setvalues", []): set.name => set }
+    for_each = { for set in lookup(each.value, "setvalues", []) : set.name => set }
     content {
       name  = set.key
       value = set.value.value
@@ -62,31 +60,27 @@ resource "helm_release" "this" {
   }
 }
 
-# ------------------------------------------------------------------------------------------------
-# Data Configurations
-# ------------------------------------------------------------------------------------------------
-
-data "aws_ssm_parameter" "cluster_certificate_data" {
-  for_each = { for client in var.argocd_clients : client.name => client }
-  name     = "/config/argocd/${var.eks_cluster_name}/${each.key}/certificate_data"
-}
-
-data "aws_ssm_parameter" "cluster_endpoint" {
-  for_each = { for client in var.argocd_clients : client.name => client }
-  name     = "/config/argocd/${var.eks_cluster_name}/${each.key}/endpoint"
-}
 
 # ------------------------------------------------------------------------------------------------
 # Argocd Configurations
 # ------------------------------------------------------------------------------------------------
+# todo add support for non external secrets users
+resource "kubectl_manifest" "default_cluster" {
+  yaml_body = templatefile("${path.module}/files/default-cluster.yaml", {
+    cluster_name             = var.eks_cluster_name
+    cluster_endpoint       = "https://kubernetes.default.svc"
+    namespace                = var.k8s_namespace
+  })
+  depends_on = [helm_release.this]
+}
+
 resource "kubectl_manifest" "argocd_clients" {
   for_each = { for client in var.argocd_clients : client.name => client }
-  yaml_body = templatefile("${path.module}/files/clusters.yaml.tmpl", {
+  yaml_body = templatefile("${path.module}/files/clusters-external-secret.yaml", {
     cluster_name             = each.key
-    cluster_endpoint         = data.aws_ssm_parameter.cluster_endpoint[each.key].value
     argocd_client_role       = each.value.client_role_arn
-    cluster_certificate_data = data.aws_ssm_parameter.cluster_certificate_data[each.key].value
     namespace                = var.k8s_namespace
+    aws_parameter            = each.value.aws_parameter
   })
   depends_on = [helm_release.this]
 }
