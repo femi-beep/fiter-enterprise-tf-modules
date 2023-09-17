@@ -1,11 +1,11 @@
 installCRDs: true
-resources: 
+resources:
   limits:
-    cpu: 200m
-    memory: 300Mi
+    cpu: ${cert_manager_resources.cpu_request}
+    memory: ${cert_manager_resources.mem_request}
   requests:
-    cpu: 100m
-    memory: 100Mi
+    cpu: ${cert_manager_resources.cpu_request}
+    memory: ${cert_manager_resources.mem_request}
 
 webhook:
   resources: 

@@ -79,3 +79,33 @@ variable "eks_cluster_name" {
   type        = string
   description = "Name of Kubernetes Cluster. Note. change to Cluster"
 }
+
+variable "ingress_class_name" {
+  type        = string
+  description = "Ingress Class Name for Argocd Ingress"
+  default     = "nginx"
+}
+
+variable "ingress_cert_issuer" {
+  type        = string
+  description = "Cluster Issuer for Cert Manager to be used. Allows for custom"
+  default     = "letsencrypt-prod-issuer"
+}
+
+variable "set_values_argocd_helm" {
+  type        = list(any)
+  description = "List of Set Command to Pass to Prometheus Helm Install"
+  default     = []  
+}
+
+variable "ingress_tls_enabled" {
+  type        = bool
+  description = "Enable Ingress TLS"
+  default     = true
+}
+
+variable "enable_applicationset_controller" {
+  type        = bool
+  description = "Enable Applicationset Controller"
+  default     = false  
+}

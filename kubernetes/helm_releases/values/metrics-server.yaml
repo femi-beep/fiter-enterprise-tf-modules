@@ -3,8 +3,8 @@ apiService:
 
 resources: 
   limits:
-    cpu: 200m
-    memory: 300Mi
+    cpu: ${metrics_server_resources.cpu_limit}
+    memory: ${metrics_server_resources.mem_limit}
   requests:
-    cpu: 100m
-    memory: 100Mi
+    cpu: ${metrics_server_resources.cpu_request}
+    memory: ${metrics_server_resources.mem_request}

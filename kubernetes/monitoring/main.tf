@@ -54,8 +54,8 @@ resource "helm_release" "prometheus_operator" {
       STORAGE_CLASS : var.storage_class_type,
       INGRESSENABLED : var.monitoring_ingress_enabled,
       INGRESSHOSTNAME : var.monitoring_hostname,
-      INGRESSTLSENABLED : false,
-      INGRESSCLASSNAME : "nginx",
+      INGRESSTLSENABLED : var.ingress_tls_enabled,
+      INGRESSCLASSNAME : var.ingress_class_name,
       grafana_resources : var.grafana_resources,
       prom_operator_resources : var.prom_operator_resources,
       kube_state_resources : var.kube_state_resources,
@@ -63,6 +63,7 @@ resource "helm_release" "prometheus_operator" {
       prometheus_resource_requests : var.prometheus_resource_requests,
       storage_class_type : var.storage_class_type,
       prometheus_storage_size : var.prometheus_storage_size,
+      prometheus_retention_days: var.prometheus_retention_days
   })]
   depends_on = [kubernetes_secret.grafana_password]
 }

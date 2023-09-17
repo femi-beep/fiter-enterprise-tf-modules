@@ -1,10 +1,21 @@
 data "aws_caller_identity" "current" {}
 
 locals {
+  setvalues = var.ingress_class_name == "nginx" ? concat(local.nginx_annotations, var.set_values_argocd_helm) : var.set_values_argocd_helm
+  nginx_annotations = [
+    {
+      name  = "server.ingress.annotations.cert-manager\\.io/cluster-issuer"
+      value = var.ingress_cert_issuer
+    }
+  ]
+
   eks_helm_map = {
-    argocd_ingress_enabled = var.argocd_ingress_enabled
-    argocd_role_arn        = var.argocd_role_arn
-    argocd_domain          = var.argocd_domain
+    argocd_ingress_enabled           = var.argocd_ingress_enabled
+    argocd_role_arn                  = var.argocd_role_arn
+    argocd_domain                    = var.argocd_domain
+    ingress_class_name               = var.ingress_class_name
+    ingress_tls_enabled              = var.ingress_tls_enabled
+    enable_applicationset_controller = var.enable_applicationset_controller
   }
   enable_argo_apps = !(length(var.argocd_root_applications) == 0 && length(var.argocd_root_projects) == 0)
 
@@ -16,7 +27,7 @@ locals {
       version          = var.argocd_version
       namespace        = var.k8s_namespace
       create_namespace = true
-      setvalues        = [] # annotations
+      setvalues        = local.setvalues
       values = [
         templatefile("${path.module}/files/base-config.yaml", local.eks_helm_map),
         # templatefile("${path.module}/files/argocd/rbac-policy.yaml", local.eks_helm_map),
@@ -67,9 +78,9 @@ resource "helm_release" "this" {
 # todo add support for non external secrets users
 resource "kubectl_manifest" "default_cluster" {
   yaml_body = templatefile("${path.module}/files/default-cluster.yaml", {
-    cluster_name             = var.eks_cluster_name
-    cluster_endpoint       = "https://kubernetes.default.svc"
-    namespace                = var.k8s_namespace
+    cluster_name     = var.eks_cluster_name
+    cluster_endpoint = "https://kubernetes.default.svc"
+    namespace        = var.k8s_namespace
   })
   depends_on = [helm_release.this]
 }
@@ -77,10 +88,10 @@ resource "kubectl_manifest" "default_cluster" {
 resource "kubectl_manifest" "argocd_clients" {
   for_each = { for client in var.argocd_clients : client.name => client }
   yaml_body = templatefile("${path.module}/files/clusters-external-secret.yaml", {
-    cluster_name             = each.key
-    argocd_client_role       = each.value.client_role_arn
-    namespace                = var.k8s_namespace
-    aws_parameter            = each.value.aws_parameter
+    cluster_name       = each.key
+    argocd_client_role = each.value.client_role_arn
+    namespace          = var.k8s_namespace
+    aws_parameter      = each.value.aws_parameter
   })
   depends_on = [helm_release.this]
 }
@@ -97,7 +108,7 @@ resource "kubectl_manifest" "argocd_repositories" {
 }
 
 resource "kubectl_manifest" "argocd_oci_repositories" {
-  for_each = toset(var.oci_repositories)
+  for_each = toset(var.oci_repositories) #p4j9q0b3
   yaml_body = templatefile("${path.module}/files/argo-oci-credentials.yaml", {
     oci_repository = each.key
     account_id     = data.aws_caller_identity.current.account_id

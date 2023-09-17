@@ -145,6 +145,12 @@ variable "ingress_class_name" {
   default     = "nginx"
 }
 
+variable "ingress_tls_enabled" {
+  type        = bool
+  description = "Enable Ingress TLS"
+  default     = true
+}
+
 variable "set_values_prometheus_helm" {
   type        = list(any)
   description = "List of Set Command to Pass to Prometheus Helm Install"
@@ -163,7 +169,7 @@ variable "promtail_resources" {
   default = {
     cpu_request = "100m"
     mem_request = "200Mi"
-  }  
+  }
 }
 
 variable "loki_resources" {
@@ -173,4 +179,10 @@ variable "loki_resources" {
     cpu_request = "100m"
     mem_request = "200Mi"
   }
+}
+
+variable "prometheus_retention_days" {
+  type        = string
+  description = "Number of Days to Retain Prometheus Metrics"
+  default     = "180d"
 }

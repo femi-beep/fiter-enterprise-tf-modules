@@ -28,6 +28,7 @@ spec:
     - key: karpenter.k8s.aws/instance-size
       operator: In
       values:
+        - medium
         - large
         - xlarge
     - key: karpenter.k8s.aws/instance-generation

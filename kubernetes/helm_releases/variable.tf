@@ -91,7 +91,6 @@ variable "external_secret_version" {
   description = "Helm Version of External Secrets"
   type        = string
 }
-# "0.9.4"
 
 variable "service_account_arns" {
   description = "Map of Arns from Service Accounts Module"
@@ -114,4 +113,44 @@ variable "external_secrets_namespace" {
   default     = "kube-system"
   description = "Kubernetes Namespace to Deploy External Secrets"
   type        = string
+}
+
+variable "metrics_server_resources" {
+  type        = map(any)
+  description = "Resources and Limits for Metrics Server Pod"
+  default = {
+    cpu_request = "100m"
+    cpu_limit   = "200m"
+    mem_request = "100Mi"
+    mem_limit   = "300Mi"
+  }
+}
+
+variable "external_secret_resources" {
+  type        = map(any)
+  description = "Resources and Limits for External Secrets Pod"
+  default = {
+    cpu_request = "100m"
+    mem_request = "200Mi"
+  }
+}
+
+variable "cert_manager_resources" {
+  type        = map(any)
+  description = "Resources and Limits for Cert Manager Pod"
+  default = {
+    cpu_request = "100m"
+    cpu_limit   = "200m"
+    mem_request = "100Mi"
+    mem_limit   = "300Mi"
+  }
+}
+
+variable "alb_resources" {
+  type        = map(any)
+  description = "Resources and Limits for ALB Controller Pod"
+  default = {
+    cpu_request = "200m"
+    mem_request = "200Mi"
+  }
 }

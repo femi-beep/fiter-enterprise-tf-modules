@@ -127,7 +127,7 @@ alertmanager:
 
 prometheus:
   prometheusSpec:
-    retention: 180d
+    retention: ${prometheus_retention_days}
     resources:
       requests:
         memory: ${prometheus_resource_requests}

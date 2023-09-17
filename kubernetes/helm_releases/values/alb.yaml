@@ -8,3 +8,7 @@ clusterName: ${cluster_name}
 vpcId: ${vpc_id}
 replicaCount: 1
 region: ${aws_region}
+resources:
+  requests:
+    cpu: ${alb_resources.cpu_request}
+    memory: ${alb_resources.mem_request}

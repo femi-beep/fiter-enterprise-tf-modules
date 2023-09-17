@@ -1,7 +1,7 @@
 data "aws_region" "current" {}
 data "aws_caller_identity" "current" {}
 
-locals {  
+locals {
   eks_helm_map = {
     aws_region              = data.aws_region.current.name
     vpc_id                  = var.vpc_id
@@ -25,7 +25,9 @@ locals {
       chart      = "metrics-server"
       version    = var.metrics_server_version
       namespace  = "kube-system"
-      values     = [templatefile("${path.module}/values/metrics-server.yaml", local.eks_helm_map)]
+      values = [templatefile("${path.module}/values/metrics-server.yaml", {
+        metrics_server_resources = var.metrics_server_resources
+      })]
     },
     cert-manager = {
       enabled          = var.cert_manager_enabled
@@ -34,7 +36,9 @@ locals {
       version          = var.cert_manager_version
       namespace        = "cert-manager"
       create_namespace = true
-      values           = [file("${path.module}/values/cert-manager.yaml")]
+      values = [templatefile("${path.module}/values/cert-manager.yaml", {
+        cert_manager_resources : var.cert_manager_resources
+      })]
     },
     nginx-ingress = {
       enabled          = var.nginx_ingress_enabled
@@ -52,7 +56,9 @@ locals {
       version          = var.alb_ingress_version
       namespace        = "kube-system"
       create_namespace = true
-      values           = [file("${path.module}/values/alb.yaml")]
+      values = [templatefile("${path.module}/values/alb.yaml", {
+        alb_resources : var.alb_resources
+      })]
     },
     external-secret = {
       enabled          = var.external_secret_enabled
@@ -61,7 +67,9 @@ locals {
       version          = var.external_secret_version
       namespace        = var.external_secrets_namespace
       create_namespace = true
-      values           = [templatefile("${path.module}/values/external-secret.yaml", local.eks_helm_map)]
+      values = [templatefile("${path.module}/values/external-secret.yaml", {
+        external_secret_resources : var.external_secret_resources
+      })]
     }
   }
   enabled_helm_releases = { for key, value in local.helm_releases : key => value if value.enabled == true }
