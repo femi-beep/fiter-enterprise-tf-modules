@@ -84,6 +84,8 @@ resource "helm_release" "loki" {
       service_account_name : var.eks_log_sa_name,
       aws_bucket : var.eks_log_bucket,
       aws_region : var.eks_log_region
+      loki_resources: var.loki_resources
+      promtail_resources: var.promtail_resources
     }
   )]
 

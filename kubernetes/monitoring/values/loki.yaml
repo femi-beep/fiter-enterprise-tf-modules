@@ -2,8 +2,8 @@ promtail:
   enabled: true
   resources:
     requests:
-      cpu: 100m
-      memory: 200Mi
+      cpu: ${promtail_resources.cpu_request}
+      memory: ${promtail_resources.mem_request}
   pipelineStages:
     - cri: {}
     - json:
@@ -18,8 +18,8 @@ grafana:
 loki:
   resources:
     requests:
-      cpu: 100m
-      memory: 200Mi
+      cpu: ${loki_resources.cpu_request}
+      memory: ${loki_resources.mem_request}
   isDefault: false
   auth_enabled: false
   commonConfig:

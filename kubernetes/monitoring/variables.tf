@@ -156,3 +156,21 @@ variable "ingress_cert_issuer" {
   description = "Cluster Issuer for Cert Manager to be used. Allows for custom"
   default     = "letsencrypt-prod-issuer"
 }
+
+variable "promtail_resources" {
+  type        = map(any)
+  description = "Request and Limits for Promtail"
+  default = {
+    cpu_request = "100m"
+    mem_request = "200Mi"
+  }  
+}
+
+variable "loki_resources" {
+  type        = map(any)
+  description = "Request and Limits for Loki Resources"
+  default = {
+    cpu_request = "100m"
+    mem_request = "200Mi"
+  }
+}
