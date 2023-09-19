@@ -2,14 +2,13 @@ locals {
   db_port = "3306"
   publicly_accessible = var.disable_rds_public_access? false : true
   tags = {
-    Name    = "fineract-${var.client}-${var.environment}"
+    Name    = var.db_identifier
     OwnedBy = "Terraform"
   }
-  db_identifier = "${var.client}-${var.environment}"
 }
 
 resource "aws_security_group" "service" {
-  name        = "${var.client}-${var.environment}-rds-sg"
+  name        = "${var.db_identifier}-rds-sg"
   description = "Allow inbound traffic to RDS"
   vpc_id      = var.vpc_id
 
@@ -45,7 +44,7 @@ resource "aws_security_group" "service" {
 module "db" {
   source                      = "terraform-aws-modules/rds/aws"
   version                     = "6.1.1"
-  identifier                  = "fiter-${var.client}-${var.environment}" #remove fiter name
+  identifier                  = var.db_identifier
   engine                      = var.engine
   engine_version              = var.engine_version
   instance_class              = var.instance_class
@@ -65,7 +64,7 @@ module "db" {
 
   manage_master_user_password = var.manage_master_user_password
   monitoring_interval         = var.monitoring_interval
-  monitoring_role_name        = "${var.client}-${var.environment}RDSMonitoringRole"
+  monitoring_role_name        = "${var.db_identifier}RDSMonitoringRole"
   create_monitoring_role      = var.create_monitoring_role
 
   tags = local.tags
@@ -81,7 +80,8 @@ module "db" {
   major_engine_version = var.major_engine_version
 
   # Database Deletion Protection
-  deletion_protection = var.rds_db_delete_protection
+  deletion_protection = false
+  # deletion_protection = var.rds_db_delete_protection
   publicly_accessible = local.publicly_accessible # set to false to enforce it is not publicly accessible
 
 }
@@ -90,7 +90,7 @@ module "db" {
 module "credential_generator" {
   source                 = "terraform-aws-modules/lambda/aws"
   version                = "2.7.0"
-  function_name          = "fiter-${var.client}-${var.environment}-rds-lambda"
+  function_name          = "${var.db_identifier}-rds-lambda"
   description            = "Creates Database Users"
   handler                = "index.lambda_handler"
   runtime                = "python3.11"
@@ -105,7 +105,7 @@ module "credential_generator" {
     ADMIN_SECRET_NAME = module.db.db_instance_master_user_secret_arn
     DB_HOST           = module.db.db_instance_address
     ADMIN_DB_NAME     = var.initial_db_name
-    DB_IDENTIFIER     = local.db_identifier
+    DB_IDENTIFIER     = var.db_identifier
   }
 
   attach_policy_json = true
