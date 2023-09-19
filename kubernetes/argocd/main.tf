@@ -16,6 +16,7 @@ locals {
     ingress_class_name               = var.ingress_class_name
     ingress_tls_enabled              = var.ingress_tls_enabled
     enable_applicationset_controller = var.enable_applicationset_controller
+    enable_argocd_notifications      = var.enable_argocd_notifications
   }
   enable_argo_apps = !(length(var.argocd_root_applications) == 0 && length(var.argocd_root_projects) == 0)
 
@@ -107,23 +108,14 @@ resource "kubectl_manifest" "argocd_repositories" {
   depends_on = [helm_release.this]
 }
 
-resource "kubectl_manifest" "argocd_oci_repositories" {
-  for_each = toset(var.oci_repositories) #p4j9q0b3
-  yaml_body = templatefile("${path.module}/files/argo-oci-credentials.yaml", {
-    oci_repository = each.key
-    account_id     = data.aws_caller_identity.current.account_id
-    region         = var.aws_region
-    namespace      = var.k8s_namespace
-  })
-  depends_on = [helm_release.this]
-}
+resource "kubernetes_secret" "argo_notification_secret" {
+  count = var.enable_argocd_notifications ? 1 : 0
+  metadata {
+    name      = "argocd-notifications-secret"
+    namespace = var.k8s_namespace
+  }
 
-data "kubectl_path_documents" "argocd_oci_serviceaccount" {
-  pattern = "${path.module}/files/argo-credential-sa.yaml"
-}
-
-resource "kubectl_manifest" "argocd_oci_serviceaccount" {
-  count      = length(var.oci_repositories) == 0 ? 0 : length(data.kubectl_path_documents.argocd_oci_serviceaccount.documents)
-  yaml_body  = element(data.kubectl_path_documents.argocd_oci_serviceaccount.documents, count.index)
-  depends_on = [helm_release.this]
+  data = {
+    slack-token     = var.slack_token
+  }
 }
