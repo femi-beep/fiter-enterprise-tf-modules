@@ -56,9 +56,9 @@ locals {
       version          = var.alb_ingress_version
       namespace        = "kube-system"
       create_namespace = true
-      values = [templatefile("${path.module}/values/alb.yaml", {
-        alb_resources : var.alb_resources
-      })]
+      values = [templatefile("${path.module}/values/alb.yaml", merge(local.eks_helm_map, {
+        alb_resources = var.alb_resources,
+      }))]
     },
     external-secret = {
       enabled          = var.external_secret_enabled
@@ -241,7 +241,6 @@ resource "kubernetes_manifest" "parameterstore" {
     }
   }
   depends_on = [
-    helm_release.this,
-    # kubernetes_service_account.external_secret_irsa
+    helm_release.this
   ]
 }

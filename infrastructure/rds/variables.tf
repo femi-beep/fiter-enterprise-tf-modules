@@ -87,14 +87,9 @@ variable "manage_master_user_password" {
   type        = bool
 }
 
-variable "client" {
+variable "db_identifier" {
   type        = string
-  description = "Name of Client Fineract is being Deployed for"
-}
-
-variable "environment" {
-  type        = string
-  description = "Environment for deploying Fineract (prod, dev, stage)"
+  description = "Name of Database Identifier"
 }
 
 variable "vpc_id" {
@@ -119,9 +114,11 @@ variable "intra_subnets" {
 
 variable "db_service_users" {
   description = "service user to create for application"
-  type = list(string)
+  type        = list(string)
 }
 
 variable "disable_rds_public_access" {
-  
+  description = "Turn Off Public RDS Access"
+  type        = bool
+  default     = false
 }

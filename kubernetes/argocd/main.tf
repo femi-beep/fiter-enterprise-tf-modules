@@ -92,7 +92,7 @@ resource "kubectl_manifest" "argocd_clients" {
     cluster_name       = each.key
     argocd_client_role = each.value.client_role_arn
     namespace          = var.k8s_namespace
-    aws_parameter      = each.value.aws_parameter
+    aws_parameter      = each.value.aws_parameter_prefix
   })
   depends_on = [helm_release.this]
 }
@@ -101,7 +101,7 @@ resource "kubectl_manifest" "argocd_repositories" {
   for_each = { for repo in var.argocd_repos : repo.name => repo }
   yaml_body = templatefile("${path.module}/files/repository-external-secret.yaml", {
     repo_config_name = each.key
-    aws_parameter    = each.value.aws_parameter
+    aws_parameter    = var.argocd_aws_ssm_ssh
     github_url       = each.value.github_url
     namespace        = var.k8s_namespace
   })
@@ -116,6 +116,6 @@ resource "kubernetes_secret" "argo_notification_secret" {
   }
 
   data = {
-    slack-token     = var.slack_token
+    slack-token = var.slack_token
   }
 }

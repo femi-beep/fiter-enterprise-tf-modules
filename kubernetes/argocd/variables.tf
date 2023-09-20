@@ -9,12 +9,6 @@ variable "aws_region" {
   type        = string
 }
 
-variable "oci_repositories" {
-  description = "List of OCI Repositories"
-  type        = list(any)
-  default     = []
-}
-
 variable "argocd_repos" {
   description = "List of Repository containing githuburl, name and type"
   type        = list(any)
@@ -54,7 +48,7 @@ variable "argocd_enabled" {
 variable "argocd_role_arn" {
   description = "Argocd Service Account Role Arn"
   type        = string
-  default = ""
+  default     = ""
 }
 
 variable "argocd_domain" {
@@ -70,9 +64,9 @@ variable "argocd_version" {
 
 
 variable "argocd_set_values" {
-  default = []
+  default     = []
   description = "Arguement for setting Values in Helm Chart that are not passed in the values files"
-  type = list(any)
+  type        = list(any)
 }
 
 variable "eks_cluster_name" {
@@ -95,7 +89,7 @@ variable "ingress_cert_issuer" {
 variable "set_values_argocd_helm" {
   type        = list(any)
   description = "List of Set Command to Pass to Prometheus Helm Install"
-  default     = []  
+  default     = []
 }
 
 variable "ingress_tls_enabled" {
@@ -107,5 +101,23 @@ variable "ingress_tls_enabled" {
 variable "enable_applicationset_controller" {
   type        = bool
   description = "Enable Applicationset Controller"
-  default     = false  
+  default     = false
+}
+
+variable "enable_argocd_notifications" {
+  type        = bool
+  description = "Enable Argocd Notification"
+  default     = false
+}
+
+variable "slack_token" {
+  type        = string
+  description = "Slack Token to Send Notifications"
+  default     = ""
+  sensitive   = true
+}
+
+variable "argocd_aws_ssm_ssh" {
+  type        = string
+  description = "AWS Parameter Name Where Argocd Secret is Stored"
 }

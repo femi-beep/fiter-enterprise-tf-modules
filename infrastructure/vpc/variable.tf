@@ -33,6 +33,7 @@ variable "single_nat_gateway" {
 }
 
 variable "enable_karpenter_autoscaler" {
+  description = "Enabled Karpenter Autoscaler"
   default = true
 }
 
