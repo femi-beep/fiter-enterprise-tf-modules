@@ -125,7 +125,7 @@ variable "external_secret_sa_name" {
 }
 
 variable "eks_external_secret_enabled" {
-  default     = false
+  default     = true
   description = "Enable External Secrets IAM Role"
   type        = bool
 }
