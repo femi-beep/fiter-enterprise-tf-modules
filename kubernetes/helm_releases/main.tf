@@ -193,6 +193,7 @@ data "kubernetes_resource" "ingress" {
     name      = "nginx-ingress-ingress-nginx-controller"
     namespace = "kube-system"
   }
+  depends_on = [ helm_release.this ]
 }
 
 output "nginx_ingress_hostname" {
