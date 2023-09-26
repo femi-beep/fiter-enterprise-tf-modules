@@ -8,7 +8,7 @@ provider "kubernetes" {
   cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
 
   exec {
-    api_version = "client.authentication.k8s.io/v1alpha1"
+    api_version = "client.authentication.k8s.io/v1beta1"
     command     = "aws"
     # This requires the awscli to be installed locally where Terraform is executed
     args = ["eks", "get-token", "--cluster-name", module.eks.cluster_name]
@@ -93,7 +93,9 @@ module "eks" {
   # Allow Extending without making module changes
   node_security_group_additional_rules = merge(local.node_security_group_rules, var.node_security_group_additional_rules)
 
-  tags = var.common_tags
+  tags = merge(var.common_tags, {
+    "karpenter.sh/discovery" = local.cluster_name
+  })
 
   manage_aws_auth_configmap = true
 
@@ -211,7 +213,8 @@ module "karpenter" {
   policies = {
     AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
   }
-
+  irsa_tag_key = "karpenter.sh/managed-by"
+  irsa_tag_values = [local.cluster_name]
   tags = var.common_tags
 }
 

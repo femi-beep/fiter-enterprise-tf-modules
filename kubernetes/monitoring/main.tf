@@ -16,6 +16,12 @@ resource "random_password" "password" {
   override_special = "!#$%&*()-_=+[]{}<>:?"
 }
 
+resource "kubernetes_namespace" "monitoring" {
+  metadata {
+    name = var.k8s_namespace
+  }
+}
+
 resource "kubernetes_secret" "grafana_password" {
   metadata {
     name      = "grafana-admin-secret"
@@ -26,6 +32,7 @@ resource "kubernetes_secret" "grafana_password" {
     admin-user     = "admin"
     admin-password = random_password.password.result
   }
+  depends_on = [ kubernetes_namespace.monitoring ]
 }
 
 ## Deploy Prometheus and Grafana via Helm charts

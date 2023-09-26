@@ -79,7 +79,8 @@ module "db" {
   # DB option group
   major_engine_version = var.major_engine_version
 
-  # Database Deletion Protection
+  skip_final_snapshot = true
+  # Database Deletion Protection change on production
   deletion_protection = false
   # deletion_protection = var.rds_db_delete_protection
   publicly_accessible = local.publicly_accessible # set to false to enforce it is not publicly accessible
@@ -166,11 +167,6 @@ resource "aws_lambda_invocation" "db_service" {
   lifecycle_scope = "CRUD"
 }
 
-output "rds_secret" {
-  value = {
-    for key, secret in aws_lambda_invocation.db_service: key => lookup(jsondecode(secret.result), "secretname", "")
-  }
-}
 # improvements to be done
 # ability to create new db
 # add output of ARN to function to avoid user having to check for arn

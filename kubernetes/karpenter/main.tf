@@ -44,4 +44,5 @@ resource "kubectl_manifest" "karpenter_provisioner" {
     node_volume_type        = lookup(each.value, "node_volume_type", "gp3")
     node_encryption_enabled = lookup(each.value, "node_encryption_enabled", true)
   })
+  depends_on = [ helm_release.karpenter ]
 }

@@ -91,32 +91,9 @@ resource "helm_release" "this" {
 # ------------------------------------------------------------------------------------------------
 # CertBot Issuers
 # ------------------------------------------------------------------------------------------------
-resource "kubernetes_manifest" "certbot_prod" {
+resource "kubectl_manifest" "certbot_prod" {
   count = var.cert_manager_enabled && var.enable_cluster_issuer ? 1 : 0
-  manifest = {
-    "apiVersion" = "cert-manager.io/v1"
-    "kind"       = "ClusterIssuer"
-    "metadata" = {
-      "name" = "letsencrypt-prod-issuer"
-    }
-    "spec" = {
-      "acme" = {
-        "server" = "https://acme-v02.api.letsencrypt.org/directory"
-        "privateKeySecretRef" = {
-          "name" = "letsencrypt-prod"
-        }
-        "solvers" = [
-          {
-            "http01" = {
-              "ingress" = {
-                "class" = "nginx"
-              }
-            }
-          },
-        ]
-      }
-    }
-  }
+  yaml_body = file("${path.module}/manifests/clusterissuer.yaml")
   depends_on = [helm_release.this]
 }
 
@@ -186,61 +163,38 @@ resource "kubernetes_secret" "external_secret_irsa" {
   }
 }
 
-resource "kubernetes_manifest" "secretmanagerstore" {
+resource "kubectl_manifest" "secretmanagerstore" {
   count = var.external_secret_enabled && var.external_aws_secret_manager_store_enabled ? 1 : 0
-  manifest = {
-    "apiVersion" = "external-secrets.io/v1alpha1"
-    "kind"       = "ClusterSecretStore"
-    "metadata" = {
-      "name" = "external-secret-cluster-store"
-    }
-    "spec" = {
-      "provider" = {
-        "aws" = {
-          "service" = "SecretsManager"
-          "region"  = data.aws_region.current.name
-          "auth" = {
-            "jwt" = {
-              "serviceAccountRef" = {
-                "name"      = "external-secrets-irsa"
-                "namespace" = var.external_secrets_namespace
-              }
-            }
-          }
-        }
-      }
-    }
-  }
+  yaml_body = templatefile("${path.module}/manifests/secret-store.yaml",{
+    aws_region = data.aws_region.current.name
+    namespace = var.external_secrets_namespace
+  })
   depends_on = [helm_release.this]
 }
 
 
-resource "kubernetes_manifest" "parameterstore" {
+resource "kubectl_manifest" "parameterstore" {
   count = var.external_secret_enabled && var.external_aws_secret_parameter_store_enabled ? 1 : 0
-  manifest = {
-    "apiVersion" = "external-secrets.io/v1alpha1"
-    "kind"       = "ClusterSecretStore"
-    "metadata" = {
-      "name" = "external-secret-parameter-store"
-    }
-    "spec" = {
-      "provider" = {
-        "aws" = {
-          "service" = "ParameterStore"
-          "region"  = data.aws_region.current.name
-          "auth" = {
-            "jwt" = {
-              "serviceAccountRef" = {
-                "name"      = "external-secrets-irsa"
-                "namespace" = var.external_secrets_namespace
-              }
-            }
-          }
-        }
-      }
-    }
-  }
+  yaml_body = templatefile("${path.module}/manifests/parameter-store.yaml",{
+    aws_region = data.aws_region.current.name
+    namespace = var.external_secrets_namespace
+  })
   depends_on = [
     helm_release.this
   ]
+}
+
+data "kubernetes_resource" "ingress" {
+  count = var.nginx_ingress_enabled ? 1 : 0
+  api_version = "v1"
+  kind        = "Service"
+
+  metadata {
+    name      = "nginx-ingress-ingress-nginx-controller"
+    namespace = "kube-system"
+  }
+}
+
+output "nginx_ingress_hostname" {
+  value = data.kubernetes_resource.ingress[0].object.status.loadBalancer.ingress[0].hostname
 }

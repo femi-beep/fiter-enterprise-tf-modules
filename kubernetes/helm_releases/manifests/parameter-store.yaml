@@ -1,0 +1,14 @@
+apiVersion: external-secrets.io/v1alpha1
+kind: ClusterSecretStore
+metadata:
+  name: external-secret-parameter-store
+spec:
+  provider:
+    aws:
+      service: ParameterStore
+      region: ${aws_region}
+      auth:
+        jwt:
+          serviceAccountRef:
+            name: "external-secrets-irsa"
+            namespace: ${namespace}
