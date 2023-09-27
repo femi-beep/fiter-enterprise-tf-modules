@@ -249,4 +249,5 @@ resource "null_resource" "custom" {
   provisioner "local-exec" {
     command = "./kubectl --kubeconfig kubeconfig-${local.cluster_name} set env daemonset aws-node -n kube-system ENABLE_PREFIX_DELEGATION=true && rm -rf kubeconfig-${local.cluster_name}"
   }
+  depends_on = [ local_file.kubeconfig ]
 }
