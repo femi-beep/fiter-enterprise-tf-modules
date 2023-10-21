@@ -9,6 +9,25 @@ locals {
     }
   ]
 
+  local_project = [
+    {
+      project_name          = var.eks_cluster_name
+      project_description   = "Argocd Deployment Project"
+      destination_namespace = "*"
+      destination_server    = "https://kubernetes.default.svc"
+    }
+  ]
+  client_projects = [
+    for cluster in var.argocd_clients : {
+      project_name          = "${cluster.name}"
+      project_description   = "${cluster.name} Cluster Project"
+      destination_namespace = "*"
+      destination_server    = "${cluster.server}"
+    }
+  ]
+
+  projects = concat(local.local_project, local.client_projects)
+
   eks_helm_map = {
     argocd_ingress_enabled           = var.argocd_ingress_enabled
     argocd_role_arn                  = var.argocd_role_arn
@@ -18,7 +37,6 @@ locals {
     enable_applicationset_controller = var.enable_applicationset_controller
     enable_argocd_notifications      = var.enable_argocd_notifications
   }
-  enable_argo_apps = !(length(var.argocd_root_applications) == 0 && length(var.argocd_root_projects) == 0)
 
   helm_releases = {
     argo-cd = {
@@ -35,7 +53,7 @@ locals {
       ]
     },
     argocd-apps = {
-      enabled          = local.enable_argo_apps
+      enabled          = true
       repository       = "https://argoproj.github.io/argo-helm"
       chart            = "argocd-apps"
       version          = "0.0.9"
@@ -44,7 +62,7 @@ locals {
       values = [
         templatefile("${path.module}/files/argocd-apps.yaml.tmpl", {
           applications = var.argocd_root_applications
-          projects     = var.argocd_root_projects
+          projects     = local.projects
         })
       ]
     }
@@ -92,7 +110,8 @@ resource "kubectl_manifest" "argocd_clients" {
     cluster_name       = each.key
     argocd_client_role = each.value.client_role_arn
     namespace          = var.k8s_namespace
-    aws_parameter      = each.value.aws_parameter_prefix
+    aws_parameter      = "/kubernetes/${each.key}"
+    server_endpoint    = each.value.server
   })
   depends_on = [helm_release.this]
 }

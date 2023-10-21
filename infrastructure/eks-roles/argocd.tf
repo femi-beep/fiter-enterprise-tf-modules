@@ -31,7 +31,7 @@ data "aws_iam_policy_document" "argo_cd" {
     ]
 
     resources = [
-      "*",  # find a way to reduce to least privilege prefix
+      "*", # find a way to reduce to least privilege prefix
     ]
 
     effect = "Allow"
@@ -51,17 +51,20 @@ data "aws_iam_policy_document" "argo_cd" {
 
 # ED25519 key
 resource "tls_private_key" "argocdsshkey" {
+  count     = var.var.enable_argocd ? 1 : 0
   algorithm = "ED25519"
 }
 
 resource "aws_ssm_parameter" "argocd_private_key" {
-  name = "/argocd/git/argocd-user/${var.eks_cluster_name}/github_private_sshkey"
-  type = "SecureString"
-  value = tls_private_key.argocdsshkey.private_key_openssh
+  count = var.var.enable_argocd ? 1 : 0
+  name  = "/argocd/git/argocd-user/${var.eks_cluster_name}/github_private_sshkey"
+  type  = "SecureString"
+  value = tls_private_key.argocdsshkey[0].private_key_openssh
 }
 
 resource "aws_ssm_parameter" "argocd_public_key" {
-  name = "/argocd/git/argocd-user/${var.eks_cluster_name}/github_public_sshkey"
-  type = "SecureString"
-  value = tls_private_key.argocdsshkey.public_key_openssh
+  count = var.var.enable_argocd ? 1 : 0
+  name  = "/argocd/git/argocd-user/${var.eks_cluster_name}/github_public_sshkey"
+  type  = "SecureString"
+  value = tls_private_key.argocdsshkey[0].public_key_openssh
 }

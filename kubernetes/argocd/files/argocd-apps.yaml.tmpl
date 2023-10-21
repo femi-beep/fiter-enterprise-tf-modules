@@ -38,7 +38,7 @@ projects:
   - '*'
   destinations:
     - server: ${project["destination_server"]}
-      namespace: ${project["destination_namespace"]}
+      namespace: '${project["destination_namespace"]}'
   namespaceResourceBlacklist:
   - group: ''
     kind: ResourceQuota

@@ -27,12 +27,6 @@ variable "argocd_root_applications" {
   default     = []
 }
 
-variable "argocd_root_projects" {
-  description = "List of Root Projects"
-  type        = list(any)
-  default     = []
-}
-
 variable "argocd_ingress_enabled" {
   description = "Enable Argocd Ingress"
   type        = bool

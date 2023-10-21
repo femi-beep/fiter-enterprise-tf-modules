@@ -165,6 +165,11 @@ resource "aws_lambda_invocation" "db_service" {
     "USERNAME" = each.value
   })
   lifecycle_scope = "CRUD"
+  depends_on = [
+    module.db,
+    module.pymysql_layer,
+    module.credential_generator
+  ]
 }
 
 # improvements to be done

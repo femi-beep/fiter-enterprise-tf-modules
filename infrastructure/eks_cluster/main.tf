@@ -219,6 +219,17 @@ module "karpenter" {
 }
 
 # POST EKS INSTALL
+resource "aws_ssm_parameter" "cluster_endpoint" {
+  name  = "/kubernetes/${local.cluster_name}/clusterEndpoint"
+  type  = "SecureString"
+  value = module.eks.cluster_endpoint
+}
+
+resource "aws_ssm_parameter" "cluster_certificate_data" {
+  name  = "/kubernetes/${local.cluster_name}/clusterCertificateData"
+  type  = "SecureString"
+  value = module.eks.cluster_certificate_authority_data
+}
 
 module "eks-kubeconfig" {
   source     = "hyperbadger/eks-kubeconfig/aws"
