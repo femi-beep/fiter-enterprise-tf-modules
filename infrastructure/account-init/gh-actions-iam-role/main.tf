@@ -60,6 +60,10 @@ resource "aws_iam_policy" "deployment_role" {
           "kms:*",
           "dynamodb:*",
           "apprunner:*",
+          "ecr-public:GetAuthorizationToken",
+          "eks:DescribeCluster",
+          "kms:DescribeKey",
+          "sts:GetServiceBearerToken"
         ]
         Effect   = "Allow"
         Resource = "*"
@@ -85,6 +89,14 @@ resource "aws_iam_policy" "deployment_role" {
         ]
         Effect   = "Deny"
         Resource = "*"
+      },
+      {
+        Sid : "AllowKMS"
+        Action = [
+          "kms:DescribeKey",
+        ]
+        Effect   = "Allow"
+        Resource = "arn:aws:kms:*:*:key/*"
       }
     ]
   })

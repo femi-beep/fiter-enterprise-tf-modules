@@ -44,6 +44,7 @@ module "eks" {
     }
   }
 
+  kms_key_administrators             = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
   cluster_security_group_description = "The security group of the NK EKS cluster"
   cluster_security_group_name        = "${local.prefix}-sg"
   prefix_separator                   = "-"
@@ -213,9 +214,9 @@ module "karpenter" {
   policies = {
     AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
   }
-  irsa_tag_key = "karpenter.sh/managed-by"
+  irsa_tag_key    = "karpenter.sh/managed-by"
   irsa_tag_values = [local.cluster_name]
-  tags = var.common_tags
+  tags            = var.common_tags
 }
 
 # POST EKS INSTALL
@@ -232,12 +233,12 @@ resource "aws_ssm_parameter" "cluster_certificate_data" {
 }
 
 module "eks-kubeconfig" {
-  source     = "hyperbadger/eks-kubeconfig/aws"
-  version    = "1.0.0"
+  source  = "hyperbadger/eks-kubeconfig/aws"
+  version = "1.0.0"
 
   depends_on = [module.eks]
-  cluster_id =  module.eks.cluster_name
-  }
+  cluster_id = module.eks.cluster_name
+}
 
 resource "local_file" "kubeconfig" {
   content  = module.eks-kubeconfig.kubeconfig
@@ -260,5 +261,5 @@ resource "null_resource" "custom" {
   provisioner "local-exec" {
     command = "./kubectl --kubeconfig kubeconfig-${local.cluster_name} set env daemonset aws-node -n kube-system ENABLE_PREFIX_DELEGATION=true && rm -rf kubeconfig-${local.cluster_name}"
   }
-  depends_on = [ local_file.kubeconfig ]
+  depends_on = [local_file.kubeconfig]
 }
