@@ -1,6 +1,11 @@
 # ------------------------------------------------------------------------------
 # eks module
 # ------------------------------------------------------------------------------
+# support for assume role and other
+locals {
+  args = var.assume_role_arn == "" ? ["eks", "get-token", "--cluster-name", local.cluster_name] : ["eks", "get-token", "--cluster-name", local.cluster_name, "--role-arn", "${var.assume_role_arn}"]
+}
+
 data "aws_caller_identity" "current" {}
 
 provider "kubernetes" {
@@ -11,7 +16,7 @@ provider "kubernetes" {
     api_version = "client.authentication.k8s.io/v1beta1"
     command     = "aws"
     # This requires the awscli to be installed locally where Terraform is executed
-    args = ["eks", "get-token", "--cluster-name", module.eks.cluster_name]
+    args = local.args
   }
 }
 
