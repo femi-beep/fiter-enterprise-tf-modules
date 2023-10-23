@@ -37,52 +37,21 @@ locals {
     enable_applicationset_controller = var.enable_applicationset_controller
     enable_argocd_notifications      = var.enable_argocd_notifications
   }
-
-  helm_releases = {
-    argo-cd = {
-      enabled          = true
-      repository       = "https://argoproj.github.io/argo-helm"
-      chart            = "argo-cd"
-      version          = var.argocd_version
-      namespace        = var.k8s_namespace
-      create_namespace = true
-      setvalues        = local.setvalues
-      values = [
-        templatefile("${path.module}/files/base-config.yaml", local.eks_helm_map),
-        # templatefile("${path.module}/files/argocd/rbac-policy.yaml", local.eks_helm_map),
-      ]
-    },
-    argocd-apps = {
-      enabled          = true
-      repository       = "https://argoproj.github.io/argo-helm"
-      chart            = "argocd-apps"
-      version          = "0.0.9"
-      namespace        = var.k8s_namespace
-      create_namespace = true
-      values = [
-        templatefile("${path.module}/files/argocd-apps.yaml.tmpl", {
-          applications = var.argocd_root_applications
-          projects     = local.projects
-        })
-      ]
-    }
-  }
-  enabled_helm_releases = { for key, value in local.helm_releases : key => value if value.enabled == true }
 }
 
-resource "helm_release" "this" {
-  for_each = local.enabled_helm_releases
-
-  name       = each.key
-  repository = each.value.repository
-  version    = each.value.version
-  chart      = each.value.chart
-  namespace  = each.value.namespace
-  values     = each.value.values
+resource "helm_release" "argocd" {
+  name       = "argo-cd"
+  repository = "https://argoproj.github.io/argo-helm"
+  version    = var.argocd_version
+  chart      = "argo-cd"
+  namespace  = var.k8s_namespace
+  values     = [
+        templatefile("${path.module}/files/base-config.yaml", local.eks_helm_map)
+      ]
 
   create_namespace = true
   dynamic "set" {
-    for_each = { for set in lookup(each.value, "setvalues", []) : set.name => set }
+    for_each = { for set in local.setvalues : set.name => set }
     content {
       name  = set.key
       value = set.value.value
@@ -90,6 +59,20 @@ resource "helm_release" "this" {
   }
 }
 
+resource "helm_release" "argoapps" {
+  name       = "argocd-apps"
+  repository = "https://argoproj.github.io/argo-helm"
+  version    = "0.0.9"
+  chart      = "argocd-apps"
+  namespace  = var.k8s_namespace
+  values     = [
+    templatefile("${path.module}/files/argocd-apps.yaml.tmpl", {
+      applications = var.argocd_root_applications
+      projects     = local.projects
+    })
+  ]
+  create_namespace = true
+}
 
 # ------------------------------------------------------------------------------------------------
 # Argocd Configurations
@@ -101,7 +84,7 @@ resource "kubectl_manifest" "default_cluster" {
     cluster_endpoint = "https://kubernetes.default.svc"
     namespace        = var.k8s_namespace
   })
-  depends_on = [helm_release.this]
+  depends_on = [helm_release.argocd]
 }
 
 resource "kubectl_manifest" "argocd_clients" {
@@ -113,7 +96,7 @@ resource "kubectl_manifest" "argocd_clients" {
     aws_parameter      = "/kubernetes/${each.key}"
     server_endpoint    = each.value.server
   })
-  depends_on = [helm_release.this]
+  depends_on = [helm_release.argocd]
 }
 
 resource "kubectl_manifest" "argocd_repositories" {
@@ -124,7 +107,7 @@ resource "kubectl_manifest" "argocd_repositories" {
     github_url       = each.value.github_url
     namespace        = var.k8s_namespace
   })
-  depends_on = [helm_release.this]
+  depends_on = [helm_release.argocd]
 }
 
 resource "kubernetes_secret" "argo_notification_secret" {

@@ -72,8 +72,7 @@ grafana:
   %{~ if INGRESSENABLED ~}
   ingress:
     enabled: true
-    annotations:
-      kubernetes.io/ingress.class: ${INGRESSCLASSNAME}
+    ingressClassName: ${INGRESSCLASSNAME}
     hosts:
       - ${INGRESSHOSTNAME}
     %{~ if INGRESSTLSENABLED ~}

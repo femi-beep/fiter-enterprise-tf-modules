@@ -115,3 +115,9 @@ variable "argocd_aws_ssm_ssh" {
   type        = string
   description = "AWS Parameter Name Where Argocd Secret is Stored"
 }
+
+variable "argo_ingress_class" {
+  type        = string
+  description = "Argocd Ingress Class to Use"
+  default     = "nginx"
+}

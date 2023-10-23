@@ -12,9 +12,7 @@ server:
   ingress:
     # -- Enable an ingress resource for the Argo CD server
     enabled: ${argocd_ingress_enabled}
-    # -- Additional ingress annotations
-    annotations:
-      kubernetes.io/ingress.class: ${ingress_class_name}
+    ingressClassName: ${ingress_class_name}
     # -- Additional ingress labels
     hosts:
       - ${argocd_domain}
