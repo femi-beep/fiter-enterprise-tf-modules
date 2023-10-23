@@ -26,12 +26,11 @@ resource "helm_release" "karpenter" {
     CLUSTER_ENDPOINT       = var.cluster_endpoint,
     INSTANCE_PROFILE_NAME  = var.instance_profile_name
   })]
-  # lifecycle {
-  #   ignore_changes = [ 
-  #     repository_username,
-  #     repository_password
-  #    ]
-  # }
+}
+
+resource "time_sleep" "wait" {
+  create_duration = "40s"
+  depends_on      = [helm_release.karpenter]
 }
 
 resource "kubectl_manifest" "karpenter_provisioner" {
@@ -44,5 +43,5 @@ resource "kubectl_manifest" "karpenter_provisioner" {
     node_volume_type        = lookup(each.value, "node_volume_type", "gp3")
     node_encryption_enabled = lookup(each.value, "node_encryption_enabled", true)
   })
-  depends_on = [ helm_release.karpenter ]
+  depends_on = [time_sleep.wait]
 }
