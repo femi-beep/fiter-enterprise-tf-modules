@@ -1,5 +1,6 @@
 promtail:
   enabled: true
+  priorityClassName: "system-node-critical"
   resources:
     requests:
       cpu: ${promtail_resources.cpu_request}

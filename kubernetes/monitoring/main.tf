@@ -85,6 +85,13 @@ resource "helm_release" "loki" {
   create_namespace = true
   cleanup_on_fail  = true
 
+  dynamic "set" {
+    for_each = { for set in var.setvalues : set.name => set }
+    content {
+      name  = set.key
+      value = set.value.value
+    }
+  }
 
   values = [templatefile(
     "${path.module}/values/loki.yaml", {

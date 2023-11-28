@@ -186,3 +186,9 @@ variable "prometheus_retention_days" {
   description = "Number of Days to Retain Prometheus Metrics"
   default     = "180d"
 }
+
+variable "setvalues" {
+  type        = list(any)
+  description = "Set Values for Loki"
+  default     = []
+}

@@ -140,6 +140,7 @@ prometheus:
 
 
 prometheus-node-exporter:
+  priorityClassName: "system-node-critical"
   resources:
     limits:
       cpu: ${node_exporter_resources.cpu_limit}
