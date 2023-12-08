@@ -49,7 +49,7 @@ locals {
       create_namespace = true
       values           = [file("${path.module}/values/nginx-ingress.yaml")]
     },
-    alb_ingress = {
+    alb-ingress = {
       enabled          = var.alb_ingress_enabled
       repository       = "https://aws.github.io/eks-charts"
       chart            = "aws-load-balancer-controller"
@@ -197,5 +197,5 @@ data "kubernetes_resource" "ingress" {
 }
 
 output "nginx_ingress_hostname" {
-  value = data.kubernetes_resource.ingress[0].object.status.loadBalancer.ingress[0].hostname
+  value = try(data.kubernetes_resource.ingress[0].object.status.loadBalancer.ingress[0].hostname, null)
 }
