@@ -89,6 +89,7 @@ module "eks" {
 
       instance_types = value["instance_types"]
       capacity_type  = value["capacity_type"]
+      pre_bootstrap_user_data = lookup(value, "pre_bootstrap_user_data", "")
     }
   }
 
