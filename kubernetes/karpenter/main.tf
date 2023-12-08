@@ -17,7 +17,7 @@ resource "helm_release" "karpenter" {
   repository_username = var.ecr_token_username
   repository_password = var.ecr_token_password
   chart               = "karpenter"
-  version             = "v0.32.1"
+  version             = "v0.31.1"
   atomic              = true # wait for deployment to be ready
   cleanup_on_fail     = true
   values = [templatefile("${path.module}/files/values.yaml", {
