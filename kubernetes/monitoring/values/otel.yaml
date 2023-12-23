@@ -1,0 +1,33 @@
+manager:
+  ports:
+    metricsPort: 8080
+    webhookPort: 9443
+    healthzPort: 8081
+  resources:
+    limits:
+      cpu: ${otel_resources.cpu_limit}
+      memory: ${otel_resources.mem_limit}
+    requests:
+      cpu: ${otel_resources.cpu_request}
+      memory: ${otel_resources.mem_request}
+
+  ## Enable ServiceMonitor for Prometheus metrics scrape
+  serviceMonitor:
+    enabled: true
+
+  prometheusRule:
+    enabled: true
+
+  certManager:
+    enabled: true
+
+# Allows for pod scheduler prioritisation
+priorityClassName: ""
+
+## SecurityContext holds pod-level security attributes and common container settings.
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+securityContext:
+  runAsGroup: 65532
+  runAsNonRoot: true
+  runAsUser: 65532
+  fsGroup: 65532

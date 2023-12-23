@@ -1,0 +1,68 @@
+tempo:
+  resources:
+    limits:
+      cpu: ${tempo_resources.cpu_limit}
+      memory: ${tempo_resources.mem_limit}
+    requests:
+      cpu: ${tempo_resources.cpu_request}
+      memory: ${tempo_resources.mem_request}
+
+
+  metricsGenerator:
+    enabled: ${enable_metrics_generator}
+    remoteWriteUrl: "http://kube-prometheus-stack-prometheus:9090/api/v1/write"
+
+  server:
+    http_listen_port: 3100
+  storage:
+    trace:
+      backend: s3
+      s3:
+        bucket: ${aws_bucket}
+        endpoint: s3.dualstack.${aws_region}.amazonaws.com
+        prefix: "tempo_traces/"
+      wal:
+        path: /var/tempo/wal
+  receivers:
+    jaeger:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:14250
+        thrift_binary:
+          endpoint: 0.0.0.0:6832
+        thrift_compact:
+          endpoint: 0.0.0.0:6831
+        thrift_http:
+          endpoint: 0.0.0.0:14268
+    opencensus:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: "0.0.0.0:4317"
+        http:
+          endpoint: "0.0.0.0:4318"
+  securityContext: {}
+    # allowPrivilegeEscalation: false
+    #  capabilities:
+    #    drop:
+    #    - ALL
+    # readOnlyRootFilesystem: true
+
+securityContext: {}
+  # runAsUser: 65532
+  # runAsGroup: 65532
+  # fsGroup: 65532
+  # runAsNonRoot: true
+
+serviceAccount:
+  create: false
+  name: ${service_account_name}
+  annotations:
+     eks.amazonaws.com/role-arn: ${eks_log_role}
+
+serviceMonitor:
+  enabled: true
+  scrapeTimeout: 10s
+
+# -- The name of the PriorityClass
+priorityClassName: null

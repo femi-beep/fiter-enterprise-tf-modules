@@ -24,7 +24,7 @@ variable "slack_channel" {
 }
 
 variable "prometheus_helm_version" {
-  default     = "36.0.2"
+  default     = "54.2.2"
   description = "Helm Chart Version for Kube Prometheus Stack"
   type        = string
 }
@@ -32,6 +32,18 @@ variable "prometheus_helm_version" {
 variable "loki_helm_version" {
   default     = "2.9.10"
   description = "Helm Chart Version for Grafana Loki Stack"
+  type        = string
+}
+
+variable "opentelemetry_helm_version" {
+  default     = "0.43.1"
+  description = "Helm Chart Version for Opentelemetry Stack"
+  type        = string
+}
+
+variable "tempo_helm_version" {
+  default     = "1.7.1"
+  description = "Helm Chart Version for Opentelemetry Stack"
   type        = string
 }
 
@@ -119,6 +131,28 @@ variable "node_exporter_resources" {
   }
 }
 
+variable "otel_resources" {
+  type        = map(any)
+  description = "Request and Limits for Opentelemetry Manager"
+  default = {
+    cpu_request = "100m"
+    cpu_limit   = "100m"
+    mem_request = "64Mi"
+    mem_limit   = "128Mi"
+  }
+}
+
+variable "tempo_resources" {
+  type        = map(any)
+  description = "Request and Limits for Tempo deploymwnt"
+  default = {
+    cpu_request = "100m"
+    cpu_limit   = "100m"
+    mem_request = "64Mi"
+    mem_limit   = "128Mi"
+  }
+}
+
 variable "prom_operator_resources" {
   type        = map(any)
   description = "Request and Limits for Prometheus Operator"
@@ -187,8 +221,33 @@ variable "prometheus_retention_days" {
   default     = "180d"
 }
 
-variable "setvalues" {
+variable "loki_set_values" {
   type        = list(any)
   description = "Set Values for Loki"
   default     = []
+}
+
+variable "otel_setvalues" {
+  type        = list(any)
+  description = "List of Set Command to Pass to Opentelemetry Manager Install"
+  default     = []
+}
+
+
+variable "tempo_setvalues" {
+  type        = list(any)
+  description = "List of Set Command to Pass to Tempo Helm Install"
+  default     = []
+}
+
+variable "enable_tempo_metrics_generator" {
+  default     = false
+  description = "Optional to enable tempo metric generator"
+  type        = bool
+}
+
+variable "tempo_svc" {
+  default     = "tempo"
+  type        = string
+  description = "Service Url for Tempo. Used by Otel collector and tempo datasource"
 }

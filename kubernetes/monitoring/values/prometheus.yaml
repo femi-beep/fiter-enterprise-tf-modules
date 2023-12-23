@@ -40,14 +40,25 @@ grafana:
 
   forceDeployDashboards: true
 
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+      labelValue: "1"
+      searchNamespace: ALL
+      folder: /tmp/dashboards
+      folderAnnotation: grafana_folder
+      provider:
+        allowUiUpdates: true
+        foldersFromFilesStructure: true
+
   persistence:
     type: pvc
-    enabled: false
+    enabled: ${enable_grafana_storage}
     storageClassName: ${storage_class_type}
     accessModes:
       - ReadWriteOnce
-    size: 10Gi
-    # annotations: {}
+    size: ${grafana_storage_size}
     finalizers:
       - kubernetes.io/pvc-protection
 
@@ -88,11 +99,15 @@ alertmanager:
     global:
       resolve_timeout: 5m
     route:
-      group_by: ['job']
+      group_by: ['namespace'] # job
       group_wait: 30s
       group_interval: 5m
       repeat_interval: 12h
-      receiver: 'null' # change back to slack
+      %{~ if SLACK_ENABLED ~}
+      receiver: 'slack'
+      %{~ else ~}
+      receiver: 'null'
+      %{~ endif ~}
       routes:
       - match:
           alertname: Watchdog
@@ -126,6 +141,9 @@ alertmanager:
 
 prometheus:
   prometheusSpec:
+    serviceMonitorNamespaceSelector: {}
+    serviceMonitorSelector: {}
+    serviceMonitorSelectorNilUsesHelmValues: false
     retention: ${prometheus_retention_days}
     resources:
       requests:

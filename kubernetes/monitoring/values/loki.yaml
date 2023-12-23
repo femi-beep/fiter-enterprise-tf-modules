@@ -60,6 +60,7 @@ loki:
       boltdb_shipper:
         shared_store: s3
         cache_ttl: 24h
+        shared_store_key_prefix: "loki_logs/"
   serviceAccount:
     create: true
     name: ${service_account_name}

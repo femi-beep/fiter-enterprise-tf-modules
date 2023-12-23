@@ -32,7 +32,7 @@ resource "kubernetes_secret" "grafana_password" {
     admin-user     = "admin"
     admin-password = random_password.password.result
   }
-  depends_on = [ kubernetes_namespace.monitoring ]
+  depends_on = [kubernetes_namespace.monitoring]
 }
 
 ## Deploy Prometheus and Grafana via Helm charts
@@ -70,7 +70,9 @@ resource "helm_release" "prometheus_operator" {
       prometheus_resource_requests : var.prometheus_resource_requests,
       storage_class_type : var.storage_class_type,
       prometheus_storage_size : var.prometheus_storage_size,
-      prometheus_retention_days: var.prometheus_retention_days
+      prometheus_retention_days : var.prometheus_retention_days,
+      grafana_storage_size : var.grafana_storage_size,
+      enable_grafana_storage : var.enable_grafana_storage
   })]
   depends_on = [kubernetes_secret.grafana_password]
 }
@@ -86,7 +88,7 @@ resource "helm_release" "loki" {
   cleanup_on_fail  = true
 
   dynamic "set" {
-    for_each = { for set in var.setvalues : set.name => set }
+    for_each = { for set in var.loki_set_values : set.name => set }
     content {
       name  = set.key
       value = set.value.value
@@ -99,8 +101,8 @@ resource "helm_release" "loki" {
       service_account_name : var.eks_log_sa_name,
       aws_bucket : var.eks_log_bucket,
       aws_region : var.eks_log_region
-      loki_resources: var.loki_resources
-      promtail_resources: var.promtail_resources
+      loki_resources : var.loki_resources
+      promtail_resources : var.promtail_resources
     }
   )]
 
@@ -115,6 +117,9 @@ resource "kubernetes_config_map" "log_dashboard" {
     labels = {
       "grafana_dashboard" = "1"
     }
+    annotations = {
+      "grafana_folder" = "App_Dashboard"
+    }
   }
   data = {
     "kubernetes_logs.json" = file("${path.module}/dashboards/kube-logs.json")
@@ -122,3 +127,89 @@ resource "kubernetes_config_map" "log_dashboard" {
   depends_on = [helm_release.prometheus_operator]
 }
 
+resource "helm_release" "opentelemetry" {
+  name             = "opentelemetry-operator"
+  chart            = "opentelemetry-operator"
+  version          = var.opentelemetry_helm_version
+  repository       = "https://open-telemetry.github.io/opentelemetry-helm-charts"
+  namespace        = var.k8s_namespace
+  create_namespace = true
+  cleanup_on_fail  = true
+
+  dynamic "set" {
+    for_each = { for set in var.otel_setvalues : set.name => set }
+    content {
+      name  = set.key
+      value = set.value.value
+    }
+  }
+
+  values = [templatefile(
+    "${path.module}/values/otel.yaml", {
+      otel_resources : var.otel_resources
+    }
+  )]
+
+  depends_on = [kubernetes_namespace.monitoring]
+}
+
+resource "helm_release" "grafana_tempo" {
+  name             = "tempo"
+  chart            = "tempo"
+  version          = var.tempo_helm_version
+  repository       = "https://grafana.github.io/helm-charts"
+  namespace        = var.k8s_namespace
+  create_namespace = true
+  cleanup_on_fail  = true
+
+  dynamic "set" {
+    for_each = { for set in var.tempo_setvalues : set.name => set }
+    content {
+      name  = set.key
+      value = set.value.value
+    }
+  }
+
+  values = [templatefile(
+    "${path.module}/values/tempo.yaml", {
+      tempo_resources : var.tempo_resources,
+      service_account_name : var.eks_log_sa_name,
+      eks_log_role : var.eks_log_role,
+      enable_metrics_generator : var.enable_tempo_metrics_generator,
+      aws_bucket : var.eks_log_bucket,
+      aws_region : var.eks_log_region
+    }
+  )]
+
+  depends_on = [kubernetes_namespace.monitoring]
+}
+
+resource "kubernetes_config_map" "tempo_datasource" {
+  metadata {
+    name      = "tempo-datasource"
+    namespace = var.k8s_namespace
+    labels = {
+      "grafana_datasource" = "1"
+    }
+  }
+  data = {
+    "tempo-datasource.yaml" = templatefile("${path.module}/files/tempo-datasource.yaml", {
+      tempo_svc : var.tempo_svc,
+    })
+  }
+  depends_on = [
+    helm_release.prometheus_operator,
+    helm_release.grafana_tempo
+  ]
+}
+
+resource "kubectl_manifest" "otel_collector" {
+  yaml_body = templatefile("${path.module}/files/default-collector.yaml", {
+    collector_exporter_endpoint = var.tempo_svc
+    k8s_namespace               = var.k8s_namespace
+  })
+  depends_on = [
+    helm_release.opentelemetry,
+    helm_release.grafana_tempo
+  ]
+}
