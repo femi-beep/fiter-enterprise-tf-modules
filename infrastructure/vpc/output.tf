@@ -24,5 +24,11 @@ output "azs" {
 }
 
 output "intra_subnets" {
-  value = module.vpc.intra_subnets
+  description = "Subnet ID for intra subnets"
+  value       = module.vpc.intra_subnets
+}
+
+output "private_route_table_ids" {
+  description = "Route Table ID's for the Private subnet"
+  value       = module.vpc.private_route_table_ids
 }
