@@ -17,7 +17,7 @@ variable "metric_server_enabled" {
 }
 
 variable "metrics_server_version" {
-  default     = "6.2.11"
+  default     = "6.6.4"
   description = "Helm Chart Version for Metrics Server"
   type        = string
 }
@@ -29,7 +29,7 @@ variable "cert_manager_enabled" {
 }
 
 variable "cert_manager_version" {
-  default     = "v1.8.0"
+  default     = "v1.13.2"
   description = "Helm Chart Version for Cert Manager"
   type        = string
 }
@@ -47,7 +47,7 @@ variable "nginx_ingress_enabled" {
 }
 
 variable "nginx_ingress_version" {
-  default     = "4.7.1"
+  default     = "4.8.4"
   description = "Helm Chart Version for Nginx Ingress Controller"
   type        = string
 }
@@ -87,7 +87,7 @@ variable "external_secret_enabled" {
 }
 
 variable "external_secret_version" {
-  default     = "0.9.4"
+  default     = "0.9.9"
   description = "Helm Version of External Secrets"
   type        = string
 }
