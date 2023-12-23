@@ -4,6 +4,27 @@
 # support for assume role and other
 locals {
   args = var.assume_role_arn == "" ? ["eks", "get-token", "--cluster-name", local.cluster_name] : ["eks", "get-token", "--cluster-name", local.cluster_name, "--role-arn", "${var.assume_role_arn}"]
+  interface_endpoints = { for endpoint in var.vpc_interface_endpoints : endpoint => {
+    service             = endpoint
+    service_type        = "Interface"
+    private_dns_enabled = true
+    tags = {
+      Name = "${endpoint}-vpc-endpoint"
+    }
+    }
+  }
+
+  gateway_endpoint = { for endpoint in var.vpc_gateway_endpoints : endpoint => {
+      service         = endpoint
+      service_type    = "Gateway"
+      tags            = { 
+        Name = "${endpoint}-vpc-endpoint" 
+      }
+      route_table_ids = var.route_table_ids
+    }
+  }
+
+  endpoints = merge(local.interface_endpoints, local.gateway_endpoint)
 }
 
 data "aws_caller_identity" "current" {}
@@ -87,8 +108,8 @@ module "eks" {
       taints       = lookup(value, "taints", [])
       subnet_ids   = lookup(value, "subnet_ids", var.subnets)
 
-      instance_types = value["instance_types"]
-      capacity_type  = value["capacity_type"]
+      instance_types          = value["instance_types"]
+      capacity_type           = value["capacity_type"]
       pre_bootstrap_user_data = lookup(value, "pre_bootstrap_user_data", "")
     }
   }
@@ -99,6 +120,16 @@ module "eks" {
   }
   # Allow Extending without making module changes
   node_security_group_additional_rules = merge(local.node_security_group_rules, var.node_security_group_additional_rules)
+  cluster_security_group_additional_rules = {
+    ingress_bastion = {
+      description = "Allow access from Bastion Host"
+      type        = "ingress"
+      from_port   = 443
+      to_port     = 443
+      protocol    = "tcp"
+      cidr_blocks = var.cluster_endpoint_public_access_cidrs
+    }
+  }
 
   tags = merge(var.common_tags, {
     "karpenter.sh/discovery" = local.cluster_name
@@ -109,6 +140,18 @@ module "eks" {
   aws_auth_roles = local.eks_auth_roles
 
   aws_auth_users = local.eks_auth_users
+}
+
+# add support for fully private clusters
+module "endpoints" {
+  count                 = var.cluster_endpoint_public_access ? 0 : 1
+  source                = "terraform-aws-modules/vpc/aws//modules/vpc-endpoints"
+  version               = "5.2.0"
+  vpc_id                = var.vpc_id
+  create_security_group = false
+  security_group_ids    = [module.eks.node_security_group_id, module.eks.cluster_security_group_id]
+  subnet_ids            = var.subnets
+  endpoints             = local.endpoints
 }
 
 module "ebs_kms_key" {
@@ -212,8 +255,8 @@ module "eks_log_bucket" {
 
 
 module "karpenter" {
-  source = "terraform-aws-modules/eks/aws//modules/karpenter"
-
+  source                 = "terraform-aws-modules/eks/aws//modules/karpenter"
+  version                = "19.20.0"
   cluster_name           = module.eks.cluster_name
   irsa_oidc_provider_arn = module.eks.oidc_provider_arn
 

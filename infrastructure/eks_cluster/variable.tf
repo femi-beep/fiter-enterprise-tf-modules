@@ -69,3 +69,21 @@ variable "assume_role_arn" {
   type        = string
   default     = ""
 }
+
+variable "route_table_ids" {
+  description = "Route Table ID for the s3 gateway endpoint if privake only cluster is used"
+  type        = list(string)
+  default     = []
+}
+
+variable "vpc_interface_endpoints" {
+  description = "List of Services to create VPC interface Endpoints. Used for Private Clusters"
+  type        = list(string)
+  default     = []
+}
+
+variable "vpc_gateway_endpoints" {
+  description = "List of Services to create VPC Gateway Endpoints. Used for Private Clusters"
+  type        = list(string)
+  default     = []
+}
