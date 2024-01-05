@@ -36,6 +36,10 @@ locals {
     ingress_tls_enabled              = var.ingress_tls_enabled
     enable_applicationset_controller = var.enable_applicationset_controller
     enable_argocd_notifications      = var.enable_argocd_notifications
+    argocd_server_replicas           = var.argocd_server_replicas
+    argocd_server_pdb_enabled        = var.argocd_server_pdb_enabled
+    argocd_server_min_pdb            = var.argocd_server_min_pdb
+    projects                         = local.projects
   }
 }
 
@@ -104,7 +108,7 @@ resource "kubectl_manifest" "argocd_repositories" {
   for_each = { for repo in var.argocd_repos : repo.name => repo }
   yaml_body = templatefile("${path.module}/files/repository-external-secret.yaml", {
     repo_config_name = each.key
-    aws_parameter    = var.argocd_aws_ssm_ssh
+    aws_parameter    = try(each.value.repo_key_ssm_path, var.argocd_aws_ssm_ssh)
     github_url       = each.value.github_url
     namespace        = var.k8s_namespace
   })

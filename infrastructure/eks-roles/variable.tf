@@ -129,3 +129,9 @@ variable "eks_external_secret_enabled" {
   description = "Enable External Secrets IAM Role"
   type        = bool
 }
+
+variable "additional_policies" {
+  type        = map(any)
+  description = "Map of Additional Policies, Extending the module"
+  default     = {}
+}

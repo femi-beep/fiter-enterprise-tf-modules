@@ -5,11 +5,11 @@ variable "deployment_role_name" {
 
 variable "github_openidconnect_arn" {}
 
-variable "repo_list" {
-  type        = list(string)
-  description = "List of Repository to Grant Permission"
-}
-
 variable "bucket_name" {}
 
 variable "table_name" {}
+
+variable "ci_pipelines_roles" {
+  type        = map(any)
+  description = "CI Policies to attach"
+}

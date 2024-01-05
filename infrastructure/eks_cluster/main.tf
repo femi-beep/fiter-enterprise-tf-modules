@@ -15,16 +15,21 @@ locals {
   }
 
   gateway_endpoint = { for endpoint in var.vpc_gateway_endpoints : endpoint => {
-      service         = endpoint
-      service_type    = "Gateway"
-      tags            = { 
-        Name = "${endpoint}-vpc-endpoint" 
-      }
-      route_table_ids = var.route_table_ids
+    service      = endpoint
+    service_type = "Gateway"
+    tags = {
+      Name = "${endpoint}-vpc-endpoint"
+    }
+    route_table_ids = var.route_table_ids
     }
   }
 
   endpoints = merge(local.interface_endpoints, local.gateway_endpoint)
+  kube_deploy_user = var.helm_deploy ? [{
+    rolearn  = "arn:aws:iam::${local.account_id}:role/${local.cluster_name}-ghdeploy-role-kube-deploy"
+    username = "helm-ci-deployer"
+    groups   = ["ci-user"]
+  }] : []
 }
 
 data "aws_caller_identity" "current" {}
@@ -162,7 +167,7 @@ module "ebs_kms_key" {
 
   # Policy
   key_administrators = [
-    data.aws_caller_identity.current.arn
+    "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${local.cluster_name}-ghdeploy-role-terraform"
   ]
 
   key_service_roles_for_autoscaling = [
@@ -292,6 +297,9 @@ module "eks-kubeconfig" {
 resource "local_file" "kubeconfig" {
   content  = module.eks-kubeconfig.kubeconfig
   filename = "kubeconfig-${local.cluster_name}"
+  lifecycle {
+    ignore_changes = all
+  }
 }
 
 data "external" "os" {

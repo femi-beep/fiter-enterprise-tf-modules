@@ -47,7 +47,7 @@ variable "nginx_ingress_enabled" {
 }
 
 variable "nginx_ingress_version" {
-  default     = "4.8.4"
+  default     = "4.8.3"
   description = "Helm Chart Version for Nginx Ingress Controller"
   type        = string
 }
@@ -153,4 +153,10 @@ variable "alb_resources" {
     cpu_request = "200m"
     mem_request = "200Mi"
   }
+}
+
+variable "additional_helm_charts" {
+  type        = map(any)
+  description = "Map of additional Charts to create"
+  default     = {}
 }
