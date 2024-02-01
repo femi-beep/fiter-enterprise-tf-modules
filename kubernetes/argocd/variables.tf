@@ -139,3 +139,9 @@ variable "argocd_server_min_pdb" {
   description = "minimum number of allowed available pods when pdb is enabled"
   default     = 1
 }
+
+variable "argoapps_version" {
+  type        = string
+  description = "Version of argocd app helm chart"
+  default     = "0.0.9"
+}

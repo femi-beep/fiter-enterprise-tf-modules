@@ -66,7 +66,7 @@ resource "helm_release" "argocd" {
 resource "helm_release" "argoapps" {
   name       = "argocd-apps"
   repository = "https://argoproj.github.io/argo-helm"
-  version    = "0.0.9"
+  version    = var.argoapps_version
   chart      = "argocd-apps"
   namespace  = var.k8s_namespace
   values     = [

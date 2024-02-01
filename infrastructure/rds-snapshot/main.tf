@@ -1,0 +1,100 @@
+resource "aws_db_snapshot" "db" {
+  db_instance_identifier = var.snapshot_db_name
+  db_snapshot_identifier = "${var.snapshot_db_name}-snapshot-${formatdate("YYYY-MM-DD", timestamp())}"
+  lifecycle {
+    ignore_changes = [
+      db_snapshot_identifier
+    ]
+  }
+}
+
+locals {
+  db_port             = var.db_port
+  publicly_accessible = var.disable_rds_public_access ? false : true
+  tags = {
+    Name    = var.db_identifier
+    OwnedBy = "Terraform"
+  }
+}
+
+resource "aws_security_group" "service" {
+  name        = "${var.db_identifier}-rds-sg"
+  description = "Allow inbound traffic to RDS"
+  vpc_id      = var.vpc_id
+  tags        = local.tags
+}
+
+resource "aws_vpc_security_group_ingress_rule" "vpc_ingress" {
+  security_group_id = aws_security_group.service.id
+  cidr_ipv4         = var.vpc_cidr_block
+  from_port         = var.db_port
+  ip_protocol       = "tcp"
+  to_port           = var.db_port
+}
+
+resource "aws_vpc_security_group_ingress_rule" "access_ingress" {
+  for_each          = toset(var.allowed_cidrs)
+  security_group_id = aws_security_group.service.id
+  cidr_ipv4         = each.value
+  from_port         = var.db_port
+  ip_protocol       = "tcp"
+  to_port           = var.db_port
+}
+
+resource "aws_vpc_security_group_egress_rule" "egress" {
+  security_group_id = aws_security_group.service.id
+  cidr_ipv4         = var.vpc_cidr_block
+  ip_protocol       = "-1"
+}
+
+module "db" {
+  source                      = "terraform-aws-modules/rds/aws"
+  version                     = "6.1.1"
+  identifier                  = var.db_identifier
+  engine                      = var.engine
+  engine_version              = var.engine_version
+  instance_class              = var.instance_class
+  allocated_storage           = var.db_storage_size
+  allow_major_version_upgrade = false
+
+  db_name                         = var.initial_db_name
+  username                        = var.username
+  port                            = local.db_port
+  enabled_cloudwatch_logs_exports = var.cloudwatch_logs_names
+  vpc_security_group_ids          = [aws_security_group.service.id]
+
+  backup_retention_period = var.backup_retention_period
+  maintenance_window      = var.maintenance_window
+  backup_window           = var.backup_window
+
+  snapshot_identifier         = aws_db_snapshot.db.db_snapshot_identifier
+  manage_master_user_password = var.manage_master_user_password # only add if you want to change password of snapshot
+  monitoring_interval         = var.monitoring_interval
+  monitoring_role_name        = "${var.db_identifier}RDSMonitoringRole"
+  create_monitoring_role      = var.create_monitoring_role
+  storage_encrypted           = var.encrypyt_db_storage
+  storage_type                = var.storage_type
+  iops                        = var.iops
+  ca_cert_identifier          = var.ca_cert_identifier
+
+  performance_insights_enabled          = var.performance_insights_enabled
+  performance_insights_retention_period = var.performance_insights_retention_period
+
+  tags = local.tags
+
+
+  # DB subnet group
+  create_db_subnet_group = true
+  subnet_ids             = var.rds_subnets
+
+  # DB parameter group
+  family = var.rds_family
+
+  # DB option group
+  major_engine_version = var.major_engine_version
+
+  skip_final_snapshot = true
+  # Database Deletion Protection change on production
+  deletion_protection = var.rds_db_delete_protection
+  publicly_accessible = local.publicly_accessible # set to false to enforce it is not publicly accessible
+}
