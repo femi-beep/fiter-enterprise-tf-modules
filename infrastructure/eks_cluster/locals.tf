@@ -57,5 +57,5 @@ locals {
       groups   = ["system:masters"]
     }
   ]
-  eks_auth_roles = concat(local.auth_roles, local.karpenter_auth_roles)
+  eks_auth_roles = concat(local.auth_roles, local.karpenter_auth_roles, local.kube_deploy_user)
 }

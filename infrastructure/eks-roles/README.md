@@ -21,6 +21,7 @@ No requirements.
 |------|------|
 | [aws_iam_policy.argo_cd](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
 | [aws_iam_policy.cluster_autoscaler](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
+| [aws_iam_policy.eks_apps_service_account_policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
 | [aws_iam_policy.eks_logger](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
 | [aws_iam_policy.external_dns](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
 | [aws_iam_policy.external_secret](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
@@ -40,6 +41,7 @@ No requirements.
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
+| <a name="input_additional_policies"></a> [additional\_policies](#input\_additional\_policies) | Map of Additional Policies, Extending the module | `map(any)` | `{}` | no |
 | <a name="input_alb_k8s_namespace"></a> [alb\_k8s\_namespace](#input\_alb\_k8s\_namespace) | (Optional) Kubernetes Namespace for ALB Controller | `string` | `"kube-system"` | no |
 | <a name="input_alb_sa_name"></a> [alb\_sa\_name](#input\_alb\_sa\_name) | (Optional) Kubernetes Service Account for ALB Controller | `string` | `"aws-alb-ingress-controller-sa"` | no |
 | <a name="input_argocd_k8s_namespace"></a> [argocd\_k8s\_namespace](#input\_argocd\_k8s\_namespace) | (Optional) Kubernetes Namespace for ArgoCd Controller | `string` | `"argocd"` | no |
@@ -50,7 +52,7 @@ No requirements.
 | <a name="input_ebs_k8s_namespace"></a> [ebs\_k8s\_namespace](#input\_ebs\_k8s\_namespace) | (Optional) Kubernetes Namespace for Cluster Autoscaler Controller | `string` | `"kube-system"` | no |
 | <a name="input_ebs_sa_name"></a> [ebs\_sa\_name](#input\_ebs\_sa\_name) | (Optional) Kubernetes Service Account for EBS CSI Controller | `string` | `"ebs-csi-controller-sa"` | no |
 | <a name="input_eks_cluster_name"></a> [eks\_cluster\_name](#input\_eks\_cluster\_name) | (Required) EKS Cluster Name | `string` | n/a | yes |
-| <a name="input_eks_external_secret_enabled"></a> [eks\_external\_secret\_enabled](#input\_eks\_external\_secret\_enabled) | Enable External Secrets IAM Role | `bool` | `false` | no |
+| <a name="input_eks_external_secret_enabled"></a> [eks\_external\_secret\_enabled](#input\_eks\_external\_secret\_enabled) | Enable External Secrets IAM Role | `bool` | `true` | no |
 | <a name="input_eks_log_bucket"></a> [eks\_log\_bucket](#input\_eks\_log\_bucket) | Bucket ARN to send EKS Logs | `string` | `""` | no |
 | <a name="input_enable_alb_controller"></a> [enable\_alb\_controller](#input\_enable\_alb\_controller) | (Optional) Enable Creation of ALB Controller Role | `bool` | `false` | no |
 | <a name="input_enable_argocd"></a> [enable\_argocd](#input\_enable\_argocd) | (Optional) Enable Creation of ArgoCD Role | `bool` | `false` | no |

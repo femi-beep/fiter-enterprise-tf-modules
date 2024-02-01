@@ -87,3 +87,9 @@ variable "vpc_gateway_endpoints" {
   type        = list(string)
   default     = []
 }
+
+variable "helm_deploy" {
+  description = "Create Helm Deployment User in Cluster"
+  type        = bool
+  default     = false
+}

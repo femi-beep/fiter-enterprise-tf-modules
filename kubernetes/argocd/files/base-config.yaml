@@ -2,6 +2,13 @@ global:
   logging:
     level: debug
 server:
+  replicas: ${argocd_server_replicas}
+  pdb:
+    enabled: ${argocd_server_pdb_enabled}
+    minAvailable: "${argocd_server_min_pdb}"
+  env:
+    - name: ARGOCD_API_SERVER_REPLICAS
+      value: "${argocd_server_replicas}"
   extraArgs:
     - --insecure
   logLevel: debug
@@ -39,7 +46,7 @@ notifications:
   notifiers:
     service.slack: |
       token: $slack-token
-
+  %{~ if enable_argocd_notifications ~}
   triggers:
     trigger.on-deployed: |
       - description: Application is synced and healthy. Triggered once per commit.
@@ -282,9 +289,28 @@ notifications:
             {{end}}
             ]
           }]
+  %{~ endif ~}
 
 applicationSet:
   enabled: ${enable_applicationset_controller}
 
 dex:
   enabled: false
+
+## Argo Configs
+configs:
+  cm:
+    url: "${argocd_domain}"
+    accounts.argocd-developer: login
+  rbac:
+    policy.default: "role:readonly"
+    policy.csv: |
+      %{~ for project in projects ~}
+      p, role:org-admin, applications, *, ${project["project_name"]}/*, allow
+      p, role:org-admin, projects, *, ${project["project_name"]}, allow
+      %{~ endfor ~}
+      p, role:org-admin, clusters, get, *, allow
+      p, role:org-admin, logs, get, *, allow
+      p, role:org-admin, exec, create, */*, allow
+      g, argocd-developer, role:org-admin
+    scopes: "[groups]"

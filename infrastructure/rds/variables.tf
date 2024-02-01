@@ -73,6 +73,10 @@ variable "monitoring_interval" {
 variable "engine" {
   description = "The database engine to use"
   default     = "mysql"
+  validation {
+    condition     = contains(["mysql", "postgres"], var.engine)
+    error_message = "Object Must Contain the Following Keys -> Tribe,Squad,Domain"
+  }
 }
 
 variable "backup_retention_period" {
@@ -114,11 +118,62 @@ variable "intra_subnets" {
 
 variable "db_service_users" {
   description = "service user to create for application"
-  type        = list(string)
+  type = list(object({
+    user      = string,
+    databases = list(string)
+  }))
 }
 
 variable "disable_rds_public_access" {
   description = "Turn Off Public RDS Access"
   type        = bool
   default     = false
+}
+
+variable "allowed_cidrs" {
+  description = "Allowed Cidrs in the Database"
+  type        = list(string)
+  default     = []
+}
+
+variable "db_port" {
+  description = "Database Port to Use"
+  type        = number
+  default     = 3306
+}
+
+variable "encrypyt_db_storage" {
+  description = "Enable Storage Encryption"
+  type        = bool
+  default     = true
+}
+
+variable "storage_type" {
+  description = "Storage Type"
+  default     = null
+  type        = string
+}
+
+variable "iops" {
+  type        = number
+  description = "IOPS to Provision"
+  default     = null
+}
+
+variable "ca_cert_identifier" {
+  default     = "rds-ca-2019"
+  description = "See Certificate Authority on RDS Page"
+  type        = string
+}
+
+variable "performance_insights_enabled" {
+  default     = false
+  description = "Enable Performance Insights"
+  type        = bool
+}
+
+variable "performance_insights_retention_period" {
+  default     = 0
+  description = "Performance Insights Retention days"
+  type        = number
 }

@@ -121,3 +121,27 @@ variable "argo_ingress_class" {
   description = "Argocd Ingress Class to Use"
   default     = "nginx"
 }
+
+variable "argocd_server_replicas" {
+  type        = number
+  description = "number of replicas for argpcd server"
+  default     = 1
+}
+
+variable "argocd_server_pdb_enabled" {
+  type        = bool
+  description = "enable pod pdb for rapid scaling environments, ensure replicas is over one to enable pdb"
+  default     = false
+}
+
+variable "argocd_server_min_pdb" {
+  type        = number
+  description = "minimum number of allowed available pods when pdb is enabled"
+  default     = 1
+}
+
+variable "argoapps_version" {
+  type        = string
+  description = "Version of argocd app helm chart"
+  default     = "0.0.9"
+}

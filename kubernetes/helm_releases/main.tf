@@ -76,7 +76,7 @@ locals {
 }
 
 resource "helm_release" "this" {
-  for_each = local.enabled_helm_releases
+  for_each = merge(local.enabled_helm_releases, var.additional_helm_charts)
 
   name       = each.key
   repository = each.value.repository

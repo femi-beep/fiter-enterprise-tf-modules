@@ -1,7 +1,14 @@
+resource "aws_iam_policy" "eks_apps_service_account_policy" {
+  for_each    = var.additional_policies
+  name        = "${var.eks_cluster_name}-${each.key}"
+  description = "Permissions required by the Kubernetes Pods to access AWS Resources"
+  policy      = "${file("${path.cwd}/${each.value.policy_file}")}"
+}
+
 module "eks_iam_role" {
   source                        = "terraform-aws-modules/iam/aws//modules/iam-assumable-role-with-oidc"
   version                       = "4.1.0"
-  for_each                      = { for key, value in local.eks_roles : key => value if value.enabled == true }
+  for_each                      = { for key, value in merge(local.eks_roles, local.additional_policies) : key => value if value.enabled == true }
   create_role                   = true
   role_name                     = each.value.role_name
   provider_url                  = replace(var.cluster_oidc_issuer_url, "https://", "")
@@ -56,5 +63,15 @@ locals {
       enabled             = var.eks_external_secret_enabled
     }
   }
-}
 
+  additional_policies = {
+    for key, value in var.additional_policies:
+      key => {
+        role_name           = "${var.eks_cluster_name}-${key}"
+        namespace           = value.namespace
+        serviceaccount_name = value.serviceaccount_name
+        role_policy_arn     = [aws_iam_policy.eks_apps_service_account_policy[key].arn]
+        enabled             = true
+      }
+  }
+}
