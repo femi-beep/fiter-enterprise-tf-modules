@@ -45,7 +45,7 @@ def create_secret(client, secret_name, username):
     return password
 
 def get_secret(client, secret_name):
-    print(f"attempting to get {secret_name}")
+    logger.info(f"attempting to get {secret_name}")
     try:
         get_secret_value_response = client.get_secret_value(
             SecretId=secret_name
@@ -57,7 +57,7 @@ def get_secret(client, secret_name):
     return json.loads(secret)
 
 def delete_secret(client, secret_name):
-    print(f"attempting to Delete {secret_name}")
+    logger.info(f"attempting to Delete {secret_name}")
     try:
         response = client.delete_secret(
             SecretId=secret_name,
@@ -68,7 +68,6 @@ def delete_secret(client, secret_name):
     return True
 
 def lambda_handler(event, context):
-    ACTION = event["tf"]["action"]
     DB_IDENTIFIER = os.environ["DB_IDENTIFIER"]
     USER_NAME = f'{event["USERNAME"]}'
     SECRET_NAME = f'{DB_IDENTIFIER}-{USER_NAME}-secret'
@@ -77,7 +76,8 @@ def lambda_handler(event, context):
     ADMIN_SECRET_NAME = os.environ["ADMIN_SECRET_NAME"]
     DB_HOST = os.environ["DB_HOST"]
     ADMIN_DB_NAME = os.environ["ADMIN_DB_NAME"]
-    DB_INIT = f'event["DB_INIT"]'
+    DB_INIT = f'{event["DB_INIT"]}'
+    ACCESS_TYPE = f'{event["ACCESS_TYPE"]}'
 
     session = boto3.session.Session()
     client = session.client(
@@ -101,20 +101,11 @@ def lambda_handler(event, context):
         connection.autocommit = True
         # Creating a cursor object to interact with the database
         cursor = connection.cursor()
-            
-
-        IndentationError
 
         if DB_INIT == "True":
             cursor.execute("REVOKE CREATE ON SCHEMA public FROM PUBLIC;")
-            cursor.execute("CREATE ROLE readwrite")
-            cursor.execute("GRANT USAGE, CREATE ON SCHEMA public TO readwrite")
-            cursor.execute("GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO readwrite")
-            cursor.execute("ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO readwrite")
-            cursor.execute("GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO readwrite")
-            cursor.execute("GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO readwrite")
-            cursor.execute("ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE ON SEQUENCES TO readwrite")
         else:
+            ACTION = event["tf"]["action"]
             if ACTION == "create":
                 for database_name in DATABASES:
                     cursor.execute("SELECT 1 FROM pg_catalog.pg_database WHERE datname = %s", (database_name,))
@@ -122,10 +113,24 @@ def lambda_handler(event, context):
                     if not exists:
                         cursor.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(database_name)))
                         cursor.execute(f"REVOKE ALL ON DATABASE {database_name} FROM PUBLIC")
-                        cursor.execute(f"GRANT CONNECT ON DATABASE {database_name} TO readwrite")
-                        print(f"Database {database_name} created successfully.")
+                        cursor.execute(f"CREATE ROLE {database_name}_readwrite")
+                        cursor.execute(f"GRANT CONNECT ON DATABASE {database_name} TO {database_name}_readwrite")
+                        cursor.execute(f"GRANT USAGE, CREATE ON SCHEMA public TO {database_name}_readwrite")
+                        cursor.execute(f"GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO {database_name}_readwrite")
+                        cursor.execute(f"ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO {database_name}_readwrite")
+                        cursor.execute(f"GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO {database_name}_readwrite")
+                        cursor.execute(f"GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO {database_name}_readwrite")
+                        cursor.execute(f"ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE ON SEQUENCES TO {database_name}_readwrite")
+
+                        cursor.execute(f"CREATE ROLE {database_name}_readonly")
+                        cursor.execute(f"GRANT CONNECT ON DATABASE {database_name} TO {database_name}_readonly")
+                        cursor.execute(f"GRANT USAGE ON SCHEMA public TO {database_name}_readonly")
+                        cursor.execute(f"GRANT SELECT ON ALL TABLES IN SCHEMA public TO {database_name}_readonly")
+                        cursor.execute(f"ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO {database_name}_readonly")
+                        
+                        logger.info(f"Database {database_name} created successfully.")
                     else:
-                        print(f"Database {database_name} already exists.")
+                        logger.info(f"Database {database_name} already exists.")
 
                 cursor.execute("SELECT 1 FROM pg_roles WHERE rolname=%s", (USER_NAME,))
                 user_exists = cursor.fetchone()
@@ -139,25 +144,31 @@ def lambda_handler(event, context):
                         (user_secret,)
                     )
                     cursor.execute(f"REVOKE ALL PRIVILEGES ON DATABASE postgres FROM {USER_NAME}")
-                    cursor.execute(f"GRANT readwrite TO {USER_NAME}")
-                    print(f"User {USER_NAME} created successfully.")
+                    for database_name in DATABASES:
+                        cursor.execute(f"GRANT {database_name}_{ACCESS_TYPE} TO {USER_NAME}")
+                        logger.info(f"User {USER_NAME} created successfully with Role {database_name}_{ACCESS_TYPE}.")
                 else:
-                    print(f"User {USER_NAME} already exists.")
+                    logger.info(f"User {USER_NAME} already exists.")
+            elif ACTION == "update":
+                for database_name in DATABASES:
+                    cursor.execute(f"GRANT {database_name}_{ACCESS_TYPE} TO {USER_NAME}")
+                    logger.info(f"User {USER_NAME} updated successfully with Role {database_name}_{ACCESS_TYPE}.")
             elif ACTION == "delete":
-                cursor.execute(f"REVOKE readwrite FROM {USER_NAME}")
+                for database_name in DATABASES:
+                    cursor.execute(f"REVOKE {database_name}_{ACCESS_TYPE} FROM {USER_NAME}")
                 cursor.execute(f"DROP USER IF EXISTS {USER_NAME}")
                 delete_secret(client, SECRET_NAME)
             else:
                 logger.info(f"No Action to take'")
 
     except (Exception, psycopg2.Error) as error:
-        print(f"Error connecting to the database: {error}")
+        logger.info(f"Error connecting to the database: {error}")
 
     finally:
         if connection:
             cursor.close()
             connection.close()
-            print("Database connection closed.")
+            logger.info("Database connection closed.")
             
     return {
         "secretname": SECRET_NAME

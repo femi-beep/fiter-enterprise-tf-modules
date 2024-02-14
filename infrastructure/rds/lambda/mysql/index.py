@@ -44,7 +44,7 @@ def create_secret(client, secret_name, username):
     return password
 
 def get_secret(client, secret_name):
-    print(f"attempting to get {secret_name}")
+    logger.info(f"attempting to get {secret_name}")
     try:
         get_secret_value_response = client.get_secret_value(
             SecretId=secret_name
@@ -56,7 +56,7 @@ def get_secret(client, secret_name):
     return json.loads(secret)
 
 def delete_secret(client, secret_name):
-    print(f"attempting to Delete {secret_name}")
+    logger.info(f"attempting to Delete {secret_name}")
     try:
         response = client.delete_secret(
             SecretId=secret_name,
@@ -74,7 +74,8 @@ queries = {
     "GRANT_SERVICE": "GRANT ALL PRIVILEGES ON %s.* TO %s@'%%';",
     "FLUSH": "FLUSH PRIVILEGES;",
     "DROP_USER": "DROP USER IF EXISTS %s;",
-    "USER_EXIST": "SELECT user FROM mysql.user WHERE user = %s;"
+    "USER_EXIST": "SELECT user FROM mysql.user WHERE user = %s;",
+    "DB_EXIST": "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = %s;"
 }
 
 def createConnection(db_secret, host, db_name):
@@ -87,7 +88,6 @@ def createConnection(db_secret, host, db_name):
     return conn
 
 def lambda_handler(event, context):
-    ACTION = event["tf"]["action"]
     DB_IDENTIFIER = os.environ["DB_IDENTIFIER"]
     USER_NAME = f'{event["USERNAME"]}'
     SECRET_NAME = f'{DB_IDENTIFIER}-{USER_NAME}-secret'
@@ -96,6 +96,8 @@ def lambda_handler(event, context):
     ADMIN_SECRET_NAME = os.environ["ADMIN_SECRET_NAME"]
     DB_HOST = os.environ["DB_HOST"]
     ADMIN_DB_NAME = os.environ["ADMIN_DB_NAME"]
+    DB_INIT = f'{event["DB_INIT"]}'
+    ACCESS_TYPE = f'{event["ACCESS_TYPE"]}'
 
     session = boto3.session.Session()
     client = session.client(
@@ -106,46 +108,64 @@ def lambda_handler(event, context):
     logger.info('Calculated result of Some action')
 
     db_secret = get_secret(client, ADMIN_SECRET_NAME)
-    conn = createConnection(db_secret, DB_HOST, ADMIN_DB_NAME)
     
     try:
+        conn = createConnection(db_secret, DB_HOST, ADMIN_DB_NAME)
+        admin_user = db_secret["username"]
         cursor = conn.cursor()
+        
+        if DB_INIT == "True":
+            cursor.execute(f"GRANT ROLE_ADMIN on *.* TO {admin_user};")
+        else:
+            ACTION = event["tf"]["action"]
+            if ACTION == "create":
+                for database_name in DATABASES:
+                    cursor.execute(queries["DB_EXIST"], (database_name,))
+                    exists = cursor.fetchone()
+                    if not exists:
+                        cursor.execute(f"CREATE DATABASE IF NOT EXISTS {database_name};")
 
-        if ACTION == "create":
-            for DB in DATABASES:
-                cursor.execute(f"CREATE DATABASE IF NOT EXISTS {DB};")
 
-            cursor.execute(queries["USER_EXIST"], (USER_NAME,))
-            user_exists = cursor.fetchone() is not None
+                cursor.execute(queries["USER_EXIST"], (USER_NAME,))
+                user_exists = cursor.fetchone() is not None
 
-            if user_exists:
-                logger.info(f"User '{USER_NAME}' already exists.")
-            else:
-                user_secret = create_secret(client, SECRET_NAME, USER_NAME)
-                # Create a new user
+                if user_exists:
+                    logger.info(f"User '{USER_NAME}' already exists.")
+                else:
+                    user_secret = create_secret(client, SECRET_NAME, USER_NAME)
 
-                CREATE_USER_SQL = queries["CREATE_USER"]
-                cursor.execute(CREATE_USER_SQL, (USER_NAME, user_secret))
-                logger.info(f"User '{USER_NAME}' created.")
-
-                # Grant all permissions on the database to the user
-                for DB in DATABASES:
-                    cursor.execute(f"GRANT ALL PRIVILEGES ON {DB}.* TO %s@'%%';", (USER_NAME,))
-
-                cursor.execute(queries["FLUSH"])
-                logger.info(f"All privileges granted to user '{USER_NAME}'")
-                
+                    CREATE_USER_SQL = queries["CREATE_USER"]
+                    cursor.execute(CREATE_USER_SQL, (USER_NAME, user_secret))
+                    for database_name in DATABASES:
+                        if ACCESS_TYPE == 'readwrite':
+                            cursor.execute(f"GRANT ALL ON {database_name}.* TO %s@'%%';", (USER_NAME,))
+                        else:
+                            cursor.execute(f"GRANT SELECT ON {database_name}.* TO %s@'%%';", (USER_NAME,))
+                        logger.info(f"User {USER_NAME} created successfully with Role {ACCESS_TYPE} on database {database_name}.")
+                    logger.info(f"User '{USER_NAME}' created.")
                 # Commit the changes
                 conn.commit()
+                cursor.execute(queries["FLUSH"])
 
-        elif ACTION == "delete":
-            delete_secret(client, SECRET_NAME)
-            # Delete User
-            DROP_USER_SQL = queries["DROP_USER"]
-            cursor.execute(DROP_USER_SQL, (USER_NAME))
-            conn.commit()
-        else:
-            logger.info(f"No Action to take'")
+            elif ACTION == "update":
+                # Grant all permissions on the database to the user
+                for database_name in DATABASES:
+                    if ACCESS_TYPE == 'readwrite':
+                        cursor.execute(f"GRANT ALL ON {database_name}.* TO %s@'%%';", (USER_NAME,))
+                    else:
+                        cursor.execute(f"GRANT SELECT ON {database_name}.* TO %s@'%%';", (USER_NAME,))
+                    logger.info(f"User {USER_NAME} update successfully with Role {ACCESS_TYPE} on database {database_name}.")
+                conn.commit()
+                cursor.execute(queries["FLUSH"])
+            elif ACTION == "delete":
+                delete_secret(client, SECRET_NAME)
+                # Delete User
+                DROP_USER_SQL = queries["DROP_USER"]
+                cursor.execute(DROP_USER_SQL, (USER_NAME))
+                conn.commit()
+                cursor.execute(queries["FLUSH"])
+            else:
+                logger.info(f"No Action to take'")
 
     except pymysql.MySQLError as e:
         logger.error(f"Error: {e}")
