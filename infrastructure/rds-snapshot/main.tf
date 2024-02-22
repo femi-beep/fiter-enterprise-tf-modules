@@ -35,8 +35,9 @@ resource "aws_vpc_security_group_ingress_rule" "vpc_ingress" {
 resource "aws_vpc_security_group_ingress_rule" "access_ingress" {
   for_each          = toset(var.allowed_cidrs)
   security_group_id = aws_security_group.service.id
-  cidr_ipv4         = each.value
-  from_port         = var.db_port
+  description       = each.value.description
+  cidr_ipv4         = each.value.ip
+  from_port         = lookup(each.value, "port", var.db_port)
   ip_protocol       = "tcp"
   to_port           = var.db_port
 }

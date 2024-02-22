@@ -25,7 +25,6 @@ server:
     %{~ if ingress_class_name == "alb" ~}
     controller: aws
     annotations:
-      alb.ingress.kubernetes.io/scheme: internal
       alb.ingress.kubernetes.io/target-type: ip
       alb.ingress.kubernetes.io/backend-protocol: HTTP
       alb.ingress.kubernetes.io/scheme: ${alb_ingress_scheme}
