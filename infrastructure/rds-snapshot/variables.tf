@@ -125,8 +125,13 @@ variable "snapshot_db_name" {
 
 variable "allowed_cidrs" {
   description = "Allowed Cidrs in the Database"
-  type        = list(any)
-  default     = []
+  type = list(object({
+    name        = string
+    ip          = string
+    description = string
+    port        = optional(string, null)
+  }))
+  default = []
 }
 
 variable "db_port" {
