@@ -29,7 +29,6 @@ server:
       alb.ingress.kubernetes.io/backend-protocol: HTTP
       alb.ingress.kubernetes.io/scheme: ${alb_ingress_scheme}
       alb.ingress.kubernetes.io/conditions.argocd-grpc: [{"field":"http-header","httpHeaderConfig":{"httpHeaderName": "Content-Type", "values":["application/grpc"]}}]
-      alb.ingress.kubernetes.io/healthcheck-path: /health
       alb.ingress.kubernetes.io/ssl-policy: ELBSecurityPolicy-FS-1-2-2019-08
     %{~ endif ~}
     aws:
