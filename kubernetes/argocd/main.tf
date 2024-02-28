@@ -40,6 +40,7 @@ locals {
     argocd_server_pdb_enabled        = var.argocd_server_pdb_enabled
     argocd_server_min_pdb            = var.argocd_server_min_pdb
     projects                         = local.projects
+    alb_ingress_scheme               = var.alb_ingress_scheme
   }
 }
 

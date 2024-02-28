@@ -15,22 +15,25 @@ server:
   serviceAccount:
     annotations:
       eks.amazonaws.com/role-arn: ${argocd_role_arn}
-  %{~ if argocd_ingress_enabled ~}
   ingress:
     # -- Enable an ingress resource for the Argo CD server
     enabled: ${argocd_ingress_enabled}
     ingressClassName: ${ingress_class_name}
     # -- Additional ingress labels
-    hosts:
-      - ${argocd_domain}
-    %{~ if ingress_tls_enabled ~}
-    tls:
-      - secretName: argocd-tls-certificate
-        hosts:
-          - ${argocd_domain}
-    https: true
+    hostname: ${argocd_domain}
+    tls: ${ingress_tls_enabled}
+    %{~ if ingress_class_name == "alb" ~}
+    controller: aws
+    annotations:
+      alb.ingress.kubernetes.io/target-type: ip
+      alb.ingress.kubernetes.io/backend-protocol: HTTP
+      alb.ingress.kubernetes.io/scheme: ${alb_ingress_scheme}
+      alb.ingress.kubernetes.io/conditions.argocd-grpc: [{"field":"http-header","httpHeaderConfig":{"httpHeaderName": "Content-Type", "values":["application/grpc"]}}]
+      alb.ingress.kubernetes.io/ssl-policy: ELBSecurityPolicy-FS-1-2-2019-08
     %{~ endif ~}
-  %{~ endif ~}
+    aws:
+      backendProtocolVersion: GRPC
+      serviceType: ClusterIP
 controller:
   serviceAccount:
     annotations:
@@ -300,7 +303,7 @@ dex:
 ## Argo Configs
 configs:
   cm:
-    url: "${argocd_domain}"
+    url: "https://${argocd_domain}"
     accounts.argocd-developer: login
   rbac:
     policy.default: "role:readonly"

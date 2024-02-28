@@ -4,7 +4,9 @@ locals {
     Name    = var.db_identifier
     OwnedBy = "Terraform"
   }
-  lambda_layer  = var.engine == "mysql" ? "pymysql.zip" : "psycopg2.zip"
+  security_group_map = { for key in var.allowed_cidrs: key.name => key}
+  lambda_layer = var.engine == "mysql" ? "pymysql.zip" : "psycopg2.zip"
+  read_replicas = var.enable_read_replicas ? var.read_replicas : []
 }
 
 resource "aws_security_group" "service" {
@@ -23,17 +25,18 @@ resource "aws_vpc_security_group_ingress_rule" "vpc_ingress" {
 }
 
 resource "aws_vpc_security_group_ingress_rule" "access_ingress" {
-  for_each          = toset(var.allowed_cidrs)
+  for_each          = local.security_group_map
   security_group_id = aws_security_group.service.id
-  cidr_ipv4         = each.value
-  from_port         = var.db_port
+  description       = each.value.description
+  cidr_ipv4         = each.value.ip
+  from_port         = each.value.port == null ? var.db_port : each.value.port
   ip_protocol       = "tcp"
   to_port           = var.db_port
 }
 
 resource "aws_vpc_security_group_egress_rule" "egress" {
   security_group_id = aws_security_group.service.id
-  cidr_ipv4         = var.vpc_cidr_block
+  cidr_ipv4         = "0.0.0.0/0"
   ip_protocol       = "-1"
 }
 
@@ -47,11 +50,13 @@ module "db" {
   allocated_storage           = var.db_storage_size
   allow_major_version_upgrade = false
 
-  db_name                         = var.initial_db_name
-  username                        = var.username
-  port                            = var.db_port
-  enabled_cloudwatch_logs_exports = var.cloudwatch_logs_names
-  vpc_security_group_ids          = [aws_security_group.service.id]
+  db_name                                = var.initial_db_name
+  username                               = var.username
+  port                                   = var.db_port
+  enabled_cloudwatch_logs_exports        = var.cloudwatch_logs_names
+  cloudwatch_log_group_retention_in_days = var.cloudwatch_log_group_retention_in_days
+  create_cloudwatch_log_group            = var.create_cloudwatch_log_group
+  vpc_security_group_ids                 = [aws_security_group.service.id]
 
   backup_retention_period = var.backup_retention_period
   maintenance_window      = var.maintenance_window
@@ -89,6 +94,52 @@ module "db" {
   tags = local.tags
 }
 
+module "db_replicas" {
+  for_each = toset(var.read_replicas)
+  source                      = "terraform-aws-modules/rds/aws"
+  version                     = "6.1.1"
+  identifier                  = "${var.db_identifier}-replica-${each.value}"
+  replicate_source_db         = module.db.db_instance_identifier
+  engine                      = var.engine
+  engine_version              = var.engine_version
+  instance_class              = var.instance_class
+  allocated_storage           = var.db_storage_size
+  allow_major_version_upgrade = false
+
+  port                                   = var.db_port
+  enabled_cloudwatch_logs_exports        = var.cloudwatch_logs_names
+  vpc_security_group_ids                 = [aws_security_group.service.id]
+
+  backup_retention_period = 0
+  maintenance_window      = var.maintenance_window
+  backup_window           = var.backup_window
+
+  monitoring_interval         = var.monitoring_interval
+  monitoring_role_name        = "${var.db_identifier}RDSMonitoringRole"
+  create_monitoring_role      = var.create_monitoring_role
+  storage_type                = var.storage_type
+  iops                        = var.iops
+  storage_encrypted           = var.encrypyt_db_storage
+  ca_cert_identifier          = var.ca_cert_identifier
+
+  performance_insights_enabled          = var.performance_insights_enabled
+  performance_insights_retention_period = var.performance_insights_retention_period
+
+  # DB parameter group
+  family = var.rds_family
+
+  # DB option group
+  major_engine_version = var.major_engine_version
+
+  skip_final_snapshot = true
+  # Database Deletion Protection change on production
+  deletion_protection = var.rds_db_delete_protection
+
+  publicly_accessible = local.publicly_accessible
+
+  tags = local.tags
+}
+
 
 module "credential_generator" {
   source                 = "terraform-aws-modules/lambda/aws"
@@ -97,7 +148,7 @@ module "credential_generator" {
   description            = "Creates Database Users"
   handler                = "index.lambda_handler"
   runtime                = "python3.9"
-  source_path            = "${path.module}/lambda/${var.engine}"
+  source_path            = "${path.cwd}/lambdas/${var.engine}"
   vpc_subnet_ids         = var.intra_subnets
   vpc_security_group_ids = [aws_security_group.service.id]
   attach_network_policy  = true
@@ -164,10 +215,10 @@ resource "aws_lambda_invocation" "postgres_init" {
   count         = var.engine == "postgres" ? 1 : 0
   function_name = module.credential_generator.lambda_function_arn
   input = jsonencode({
-    "USERNAME"  = "ignore",
-    "DATABASES" = [],
-    "DB_INIT"   = "True"
-
+    "USERNAME"    = "ignore",
+    "DATABASES"   = [],
+    "DB_INIT"     = "True"
+    "ACCESS_TYPE" = "readonly"
   })
   lifecycle_scope = "CREATE_ONLY"
   depends_on = [
@@ -183,9 +234,10 @@ resource "aws_lambda_invocation" "db_service" {
   function_name = module.credential_generator.lambda_function_arn
 
   input = jsonencode({
-    "USERNAME"  = each.value.user,
-    "DATABASES" = each.value.databases,
-    "DB_INIT"   = "False"
+    "USERNAME"    = each.value.user,
+    "DATABASES"   = each.value.databases,
+    "DB_INIT"     = "False"
+    "ACCESS_TYPE" = each.value.access_type
   })
   lifecycle_scope = "CRUD"
   depends_on = [

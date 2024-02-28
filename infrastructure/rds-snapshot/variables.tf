@@ -125,8 +125,13 @@ variable "snapshot_db_name" {
 
 variable "allowed_cidrs" {
   description = "Allowed Cidrs in the Database"
-  type        = list(string)
-  default     = []
+  type = list(object({
+    name        = string
+    ip          = string
+    description = string
+    port        = optional(string, null)
+  }))
+  default = []
 }
 
 variable "db_port" {
@@ -154,7 +159,7 @@ variable "iops" {
 }
 
 variable "ca_cert_identifier" {
-  default     = "rds-ca-2019"
+  default     = "rds-ca-rsa2048-g1"
   description = "See Certificate Authority on RDS Page"
   type        = string
 }

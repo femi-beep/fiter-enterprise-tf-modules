@@ -251,3 +251,9 @@ variable "tempo_svc" {
   type        = string
   description = "Service Url for Tempo. Used by Otel collector and tempo datasource"
 }
+
+variable "alb_ingress_scheme" {
+  type = string
+  description = "Annotation scheme to use if ALB ingress is used. Internet-facing or internal"
+  default = "internet-facing"
+}

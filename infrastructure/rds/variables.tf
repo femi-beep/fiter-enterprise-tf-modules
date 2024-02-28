@@ -46,6 +46,18 @@ variable "cloudwatch_logs_names" {
   default     = ["audit", "error", "general"]
 }
 
+variable "cloudwatch_log_group_retention_in_days" {
+  description = "The number of days to retain CloudWatch logs for the DB instance"
+  type        = number
+  default     = 7
+}
+
+variable "create_cloudwatch_log_group" {
+  description = "Determines whether a CloudWatch log group is created for each enabled_cloudwatch_logs_exports"
+  type        = bool
+  default     = false
+}
+
 variable "maintenance_window" {
   description = "Time at which maintainance should take place"
   default     = "Mon:00:00-Mon:03:00"
@@ -75,7 +87,7 @@ variable "engine" {
   default     = "mysql"
   validation {
     condition     = contains(["mysql", "postgres"], var.engine)
-    error_message = "Object Must Contain the Following Keys -> Tribe,Squad,Domain"
+    error_message = "Object can Contain the Following postgres or mysql"
   }
 }
 
@@ -94,6 +106,10 @@ variable "manage_master_user_password" {
 variable "db_identifier" {
   type        = string
   description = "Name of Database Identifier"
+  validation {
+    condition     = can(regex("^[0-9A-Za-z-]+$", var.db_identifier))
+    error_message = "Username should only contain numbers, letters and underscores. Only Alphanumeric values and - are allowed"
+  }
 }
 
 variable "vpc_id" {
@@ -119,9 +135,32 @@ variable "intra_subnets" {
 variable "db_service_users" {
   description = "service user to create for application"
   type = list(object({
-    user      = string,
-    databases = list(string)
+    user        = string
+    access_type = string
+    databases   = list(string)
   }))
+  validation {
+    condition = alltrue([
+      for o in var.db_service_users : contains(["readonly", "readwrite"], o.access_type)
+    ])
+    error_message = "Access_Type can only contains readonly or readwrite. Kindly check your service Users"
+  }
+
+  validation {
+    condition = alltrue([
+      for o in var.db_service_users : can(regex("^[0-9A-Za-z_]+$", o.user))
+    ])
+    error_message = "Username should only contain numbers, letters and underscores. Only Alphanumeric values are allowed"
+  }
+
+  validation {
+    condition = alltrue(flatten([
+      for o in var.db_service_users : [
+        for db_name in o.databases : can(regex("^[0-9A-Za-z_]+$", db_name))
+      ]
+    ]))
+    error_message = "DB Names should only contain numbers, letters and underscores. Only Alphanumeric values are allowed"
+  }
 }
 
 variable "disable_rds_public_access" {
@@ -132,8 +171,13 @@ variable "disable_rds_public_access" {
 
 variable "allowed_cidrs" {
   description = "Allowed Cidrs in the Database"
-  type        = list(string)
-  default     = []
+  type = list(object({
+    name        = string
+    ip          = string
+    description = string
+    port        = optional(string, null)
+  }))
+  default = []
 }
 
 variable "db_port" {
@@ -161,7 +205,7 @@ variable "iops" {
 }
 
 variable "ca_cert_identifier" {
-  default     = "rds-ca-2019"
+  default     = "rds-ca-rsa2048-g1"
   description = "See Certificate Authority on RDS Page"
   type        = string
 }
@@ -176,4 +220,16 @@ variable "performance_insights_retention_period" {
   default     = 0
   description = "Performance Insights Retention days"
   type        = number
+}
+
+variable "enable_read_replicas" {
+  default     = false
+  description = "Enable Read Replicas for Database"
+  type        = bool
+}
+
+variable "read_replicas" {
+  description = "List of Read Replicas to create"
+  type        = list(string)
+  default     = []
 }

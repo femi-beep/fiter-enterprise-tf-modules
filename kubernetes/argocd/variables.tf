@@ -51,7 +51,7 @@ variable "argocd_domain" {
 }
 
 variable "argocd_version" {
-  default     = "5.17.1"
+  default     = "6.0.6"
   description = "Version of Argocd Helm to Use"
   type        = string
 }
@@ -144,4 +144,10 @@ variable "argoapps_version" {
   type        = string
   description = "Version of argocd app helm chart"
   default     = "0.0.9"
+}
+
+variable "alb_ingress_scheme" {
+  type = string
+  description = "Annotation scheme to use if ALB ingress is used. Internet-facing or internal"
+  default = "internet-facing"
 }

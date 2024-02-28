@@ -59,7 +59,7 @@ variable "alb_ingress_enabled" {
 }
 
 variable "alb_ingress_version" {
-  default     = "1.6.0"
+  default     = "1.7.0"
   description = "Helm Chart Version for AWS Application LoadBalancer Controller"
   type        = string
 }

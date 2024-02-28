@@ -84,6 +84,13 @@ grafana:
   ingress:
     enabled: true
     ingressClassName: ${INGRESSCLASSNAME}
+    %{~ if INGRESSCLASSNAME == "alb" ~}
+    annotations:
+      alb.ingress.kubernetes.io/target-type: "ip"
+      alb.ingress.kubernetes.io/backend-protocol: "HTTP"
+      alb.ingress.kubernetes.io/scheme: "${alb_ingress_scheme}"
+      alb.ingress.kubernetes.io/ssl-policy: "ELBSecurityPolicy-FS-1-2-2019-08"
+    %{~ endif ~}
     hosts:
       - ${INGRESSHOSTNAME}
     %{~ if INGRESSTLSENABLED ~}
