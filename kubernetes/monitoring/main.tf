@@ -72,7 +72,8 @@ resource "helm_release" "prometheus_operator" {
       prometheus_storage_size : var.prometheus_storage_size,
       prometheus_retention_days : var.prometheus_retention_days,
       grafana_storage_size : var.grafana_storage_size,
-      enable_grafana_storage : var.enable_grafana_storage
+      enable_grafana_storage : var.enable_grafana_storage,
+      alb_ingress_scheme : var.alb_ingress_scheme
   })]
   depends_on = [kubernetes_secret.grafana_password]
 }
