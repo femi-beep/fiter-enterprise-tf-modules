@@ -4,6 +4,7 @@ locals {
     Name    = var.db_identifier
     OwnedBy = "Terraform"
   }
+  security_group_map = { for key in var.allowed_cidrs: key.name => key}
   lambda_layer = var.engine == "mysql" ? "pymysql.zip" : "psycopg2.zip"
   read_replicas = var.enable_read_replicas ? var.read_replicas : []
 }
@@ -24,17 +25,18 @@ resource "aws_vpc_security_group_ingress_rule" "vpc_ingress" {
 }
 
 resource "aws_vpc_security_group_ingress_rule" "access_ingress" {
-  for_each          = toset(var.allowed_cidrs)
+  for_each          = local.security_group_map
   security_group_id = aws_security_group.service.id
-  cidr_ipv4         = each.value
-  from_port         = var.db_port
+  description       = each.value.description
+  cidr_ipv4         = each.value.ip
+  from_port         = each.value.port == null ? var.db_port : each.value.port
   ip_protocol       = "tcp"
   to_port           = var.db_port
 }
 
 resource "aws_vpc_security_group_egress_rule" "egress" {
   security_group_id = aws_security_group.service.id
-  cidr_ipv4         = var.vpc_cidr_block
+  cidr_ipv4         = "0.0.0.0/0"
   ip_protocol       = "-1"
 }
 

@@ -171,8 +171,13 @@ variable "disable_rds_public_access" {
 
 variable "allowed_cidrs" {
   description = "Allowed Cidrs in the Database"
-  type        = list(string)
-  default     = []
+  type = list(object({
+    name        = string
+    ip          = string
+    description = string
+    port        = optional(string, null)
+  }))
+  default = []
 }
 
 variable "db_port" {
