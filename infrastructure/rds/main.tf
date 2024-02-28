@@ -148,7 +148,7 @@ module "credential_generator" {
   description            = "Creates Database Users"
   handler                = "index.lambda_handler"
   runtime                = "python3.9"
-  source_path            = "${path.module}/lambda/${var.engine}"
+  source_path            = "${path.cwd}/lambdas/${var.engine}"
   vpc_subnet_ids         = var.intra_subnets
   vpc_security_group_ids = [aws_security_group.service.id]
   attach_network_policy  = true
