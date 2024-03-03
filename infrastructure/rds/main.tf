@@ -4,9 +4,9 @@ locals {
     Name    = var.db_identifier
     OwnedBy = "Terraform"
   }
-  security_group_map = { for key in var.allowed_cidrs: key.name => key}
-  lambda_layer = var.engine == "mysql" ? "pymysql.zip" : "psycopg2.zip"
-  read_replicas = var.enable_read_replicas ? var.read_replicas : []
+  security_group_map = { for key in var.allowed_cidrs : key.name => key }
+  lambda_layer       = var.engine == "mysql" ? "pymysql.zip" : "psycopg2.zip"
+  read_replicas      = var.enable_read_replicas ? var.read_replicas : []
 }
 
 resource "aws_security_group" "service" {
@@ -74,6 +74,7 @@ module "db" {
 
   performance_insights_enabled          = var.performance_insights_enabled
   performance_insights_retention_period = var.performance_insights_retention_period
+  apply_immediately                     = var.apply_immediately
 
   # DB subnet group
   create_db_subnet_group = true
@@ -95,35 +96,36 @@ module "db" {
 }
 
 module "db_replicas" {
-  for_each = toset(var.read_replicas)
+  for_each                    = toset(var.read_replicas)
   source                      = "terraform-aws-modules/rds/aws"
   version                     = "6.1.1"
   identifier                  = "${var.db_identifier}-replica-${each.value}"
   replicate_source_db         = module.db.db_instance_identifier
   engine                      = var.engine
   engine_version              = var.engine_version
-  instance_class              = var.instance_class
+  instance_class              = var.instance_class  
   allocated_storage           = var.db_storage_size
   allow_major_version_upgrade = false
 
-  port                                   = var.db_port
-  enabled_cloudwatch_logs_exports        = var.cloudwatch_logs_names
-  vpc_security_group_ids                 = [aws_security_group.service.id]
+  port                            = var.db_port
+  enabled_cloudwatch_logs_exports = var.cloudwatch_logs_names
+  vpc_security_group_ids          = [aws_security_group.service.id]
 
   backup_retention_period = 0
   maintenance_window      = var.maintenance_window
   backup_window           = var.backup_window
 
-  monitoring_interval         = var.monitoring_interval
-  monitoring_role_name        = "${var.db_identifier}RDSMonitoringRole"
-  create_monitoring_role      = var.create_monitoring_role
-  storage_type                = var.storage_type
-  iops                        = var.iops
-  storage_encrypted           = var.encrypyt_db_storage
-  ca_cert_identifier          = var.ca_cert_identifier
+  monitoring_interval    = var.monitoring_interval
+  monitoring_role_name   = "${var.db_identifier}RDSMonitoringRole"
+  create_monitoring_role = var.create_monitoring_role
+  storage_type           = var.storage_type
+  iops                   = var.iops
+  storage_encrypted      = var.encrypyt_db_storage
+  ca_cert_identifier     = var.ca_cert_identifier
 
   performance_insights_enabled          = var.performance_insights_enabled
   performance_insights_retention_period = var.performance_insights_retention_period
+  apply_immediately                     = var.apply_immediately
 
   # DB parameter group
   family = var.rds_family
