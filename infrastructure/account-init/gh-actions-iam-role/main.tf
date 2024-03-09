@@ -66,7 +66,8 @@ resource "aws_iam_policy" "terraform_policy" {
           "eks:*",
           "kms:*",
           "sts:GetServiceBearerToken",
-          "secretsmanager:*"
+          "secretsmanager:*",
+          "elasticache:*"
         ]
         Effect   = "Allow"
         Resource = "*"

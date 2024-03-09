@@ -81,6 +81,7 @@ module "db" {
 
   performance_insights_enabled          = var.performance_insights_enabled
   performance_insights_retention_period = var.performance_insights_retention_period
+  apply_immediately                     = var.apply_immediately
 
   tags = local.tags
 

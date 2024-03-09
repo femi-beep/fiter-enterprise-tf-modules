@@ -175,3 +175,10 @@ variable "performance_insights_retention_period" {
   description = "Performance Insights Retention days"
   type        = number
 }
+
+
+variable "apply_immediately" {
+  description = "Specifies whether any database modifications are applied immediately, or during the next maintenance window"
+  type        = bool
+  default     = false
+}
