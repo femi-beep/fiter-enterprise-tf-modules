@@ -312,7 +312,16 @@ resource "null_resource" "custom" {
   }
 
   provisioner "local-exec" {
-    command = "wget -q https://storage.googleapis.com/kubernetes-release/release/v${var.cluster_version}.0/bin/${local.os}/$(uname -m)/kubectl && chmod +x kubectl"
+    command = <<-EOF
+      arch=$(uname -m)
+      if [ "$arch" = "x86_64" ]; then
+        arch="amd64"
+      elif [ "$arch" = "aarch64" ]; then
+        arch="arm64"
+      fi
+      wget -q https://dl.k8s.io/release/v${var.cluster_version}.0/bin/linux/$arch/kubectl
+      chmod +x kubectl
+    EOF
   }
 
   provisioner "local-exec" {
