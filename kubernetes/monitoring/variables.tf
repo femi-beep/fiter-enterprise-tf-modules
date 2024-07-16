@@ -257,3 +257,31 @@ variable "alb_ingress_scheme" {
   description = "Annotation scheme to use if ALB ingress is used. Internet-facing or internal"
   default = "internet-facing"
 }
+
+variable "blackbox_helm_version" {
+  default     = "8.10.1"
+  description = "BlackBox Exporter Helm Version"
+  type        = string
+}
+
+variable "enable_blackbox_exporter" {
+  default = false
+  type = bool
+  description = "Enable Black Box Exporter"
+}
+
+variable "blackbox_resources" {
+  type = map(any)
+  description = "Resources for BlackBox Exporter"
+  default = {
+    cpu_request = "50m"
+    mem_request = "50Mi"
+    mem_limit   = "300Mi"
+  }
+}
+
+variable "blackbox_targets" {
+  description = "Targets for BlackBox Exporter"
+  default = {}
+  type = map(any)
+}

@@ -55,6 +55,7 @@ resource "helm_release" "prometheus_operator" {
 
   values = [templatefile(
     "${path.module}/values/prometheus.yaml", {
+      grafana_enabled: var.grafana_enabled
       SLACK_ENABLED : var.slack_enabled,
       SLACK_HOOK_URL : local.slack_hook_url,
       SLACK_CHANNEL : local.slack_channel,
@@ -74,8 +75,16 @@ resource "helm_release" "prometheus_operator" {
       grafana_storage_size : var.grafana_storage_size,
       enable_grafana_storage : var.enable_grafana_storage,
       alb_ingress_scheme : var.alb_ingress_scheme
+      blackbox_targets : var.blackbox_targets
+      enable_blackbox_exporter: var.enable_blackbox_exporter
   })]
   depends_on = [kubernetes_secret.grafana_password]
+}
+
+variable "grafana_enabled" {
+  default = false
+  type = bool
+  description = "Optional. User can enable Grafana"
 }
 
 # Logging Helm Chart
@@ -213,4 +222,22 @@ resource "kubectl_manifest" "otel_collector" {
     helm_release.opentelemetry,
     helm_release.grafana_tempo
   ]
+}
+
+resource "helm_release" "blackbox_exporter" {
+  count            = var.enable_blackbox_exporter ? 1 : 0
+  name             = "prometheus-blackbox-exporter"
+  chart            = "prometheus-blackbox-exporter"
+  version          = var.blackbox_helm_version
+  repository       = "https://prometheus-community.github.io/helm-charts"
+  namespace        = var.k8s_namespace
+  cleanup_on_fail  = true
+  create_namespace = true
+
+  values = [templatefile(
+    "${path.module}/values/blackbox.yaml", {
+      blackbox_resources : var.blackbox_resources,
+      blackbox_targets : var.blackbox_targets
+    }
+  )]
 }
