@@ -6,7 +6,7 @@ metadata:
 spec:
   consolidation:
     enabled: true
-  ttlSecondsUntilExpired: 86400 
+  ttlSecondsUntilExpired: 2592000
   requirements:
     - key: "kubernetes.io/arch"
       operator: In
