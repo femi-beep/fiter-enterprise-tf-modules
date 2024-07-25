@@ -1,3 +1,7 @@
 controller:
   extraArgs:
     enable-ssl-passthrough: ""
+  service:
+    annotations:
+      service.beta.kubernetes.io/aws-load-balancer-type: "${nginx_ingress_resources.load_balancer_type}"
+      service.beta.kubernetes.io/aws-load-balancer-internal: "${nginx_ingress_resources.internal_load_balancer}"

@@ -47,7 +47,9 @@ locals {
       version          = var.nginx_ingress_version
       namespace        = "kube-system"
       create_namespace = true
-      values           = [file("${path.module}/values/nginx-ingress.yaml")]
+      values           = [templatefile("${path.module}/values/nginx-ingress.yaml", {
+        nginx_ingress_resources : var.nginx_ingress_resources
+      })]
     },
     alb-ingress = {
       enabled          = var.alb_ingress_enabled

@@ -59,6 +59,30 @@ module "eks" {
     coredns = {
       resolve_conflicts_on_create = "OVERWRITE"
       resolve_conflicts_on_update = "OVERWRITE"
+      configuration_values = var.enable_private_zone ? jsonencode({
+          corefile = <<-EOT
+            .:53 {
+              errors
+              health
+              kubernetes cluster.local in-addr.arpa ip6.arpa {
+                pods insecure
+                upstream
+                fallthrough in-addr.arpa ip6.arpa
+              }
+              prometheus :9153
+              forward . /etc/resolv.conf
+              cache 30
+              loop
+              reload
+              loadbalance
+            }
+            ${var.private_zone_host_name}:53 {
+              errors
+              cache 30
+              forward . /etc/resolv.conf
+            }
+          EOT
+      }) : null
     }
     kube-proxy = {
       resolve_conflicts_on_create = "OVERWRITE"
@@ -301,6 +325,46 @@ resource "local_file" "kubeconfig" {
     ignore_changes = all
   }
 }
+
+data "aws_route53_zone" "private_zone" {
+  count        = var.enable_private_zone ? 1 : 0
+  name         = var.private_zone_host_name
+  private_zone = true
+  vpc_id       = var.vpc_id
+}
+
+resource "aws_route53_record" "cname_records" {
+  count   = var.enable_private_zone ? length(var.cname_records) : 0
+  zone_id = data.aws_route53_zone.private_zone[0].zone_id
+  name    = var.cname_records[count.index].value
+  type    = "CNAME"
+  ttl     = var.cname_records[count.index].ttl
+
+  #TODO dONT HARDCORD THIS.
+  records = ["a076e175ce3384ef8be5e038f50b0d2d-1687f34ef004f76b.elb.eu-central-1.amazonaws.com"]
+  depends_on = [ module.eks ]
+}
+
+# module "acm" {
+#   source  = "terraform-aws-modules/acm/aws"
+#   version = "~> 4.0"
+#   create_certificate   = var.enable_private_zone
+
+#   domain_name  = var.private_zone_host_name
+#   zone_id      = data.aws_route53_zone.private_zone[0].zone_id
+
+#   validation_method = "DNS"
+
+#   subject_alternative_names = [
+#     "*.${var.private_zone_host_name}"
+#   ]
+
+#   wait_for_validation = true
+
+#   tags = var.common_tags
+#   depends_on = [ aws_route53_record.cname_records ]
+# }
+
 
 data "external" "os" {
   program = ["sh", "${path.cwd}/get_os.sh"]

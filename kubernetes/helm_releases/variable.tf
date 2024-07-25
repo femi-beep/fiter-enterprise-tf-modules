@@ -160,3 +160,12 @@ variable "additional_helm_charts" {
   description = "Map of additional Charts to create"
   default     = {}
 }
+
+variable "nginx_ingress_resources" {
+  type        = map(any)
+  description = "Additional configurations for nginx-ingress controller"
+  default = {
+    "internal_load_balancer": "false"
+  }
+  
+}

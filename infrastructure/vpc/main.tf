@@ -66,3 +66,14 @@ module "endpoints" {
     },
   }
 }
+
+
+resource "aws_route53_zone" "private_zone" {
+  count = var.enable_private_zone ? 1 : 0
+  name = var.private_zone_host_name
+  vpc {
+    vpc_id = module.vpc.vpc_id
+  }
+  depends_on = [ module.vpc ]
+  tags = var.common_tags
+}
