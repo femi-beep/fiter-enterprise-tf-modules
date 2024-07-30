@@ -88,6 +88,9 @@ resource "aws_instance" "openvpn" {
       Name = "OpenVPN Server"
     }
   )
+  lifecycle {
+    ignore_changes = [ ami ]
+  }
 }
 
 
