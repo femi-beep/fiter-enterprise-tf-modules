@@ -27,7 +27,6 @@ variable "vpn_server_instance_type" {
 variable vpn_server_ami {
   description = "AMI to deploy server"
   type        = string
-  default     = "ami-0b606792b54410645"
 }
 
 variable "vpn_authorized_access_cidr" {
