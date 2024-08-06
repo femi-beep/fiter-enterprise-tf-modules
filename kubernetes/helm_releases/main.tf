@@ -201,3 +201,22 @@ data "kubernetes_resource" "ingress" {
 output "nginx_ingress_hostname" {
   value = try(data.kubernetes_resource.ingress[0].object.status.loadBalancer.ingress[0].hostname, null)
 }
+
+
+data "aws_route53_zone" "private_zone" {
+  count        = var.enable_private_zone ? 1 : 0
+  name         = var.private_zone_host_name
+  private_zone = true
+  vpc_id       = var.vpc_id
+}
+
+resource "aws_route53_record" "cname_records" {
+  count   = var.enable_private_zone ? length(var.cname_records) : 0
+  zone_id = data.aws_route53_zone.private_zone[0].zone_id
+  name    = var.cname_records[count.index].value
+  type    = "CNAME"
+  ttl     = var.cname_records[count.index].ttl
+
+  records = [try(data.kubernetes_resource.ingress[0].object.status.loadBalancer.ingress[0].hostname, null)]
+  depends_on = [ helm_release.this ]
+}

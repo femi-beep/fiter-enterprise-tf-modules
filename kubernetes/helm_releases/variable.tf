@@ -169,3 +169,44 @@ variable "nginx_ingress_resources" {
   }
   
 }
+
+
+variable "cname_records" {
+  description = "List of CNAME records to create in the private zone"
+  type        = list(map(string))
+    default     = [ 
+      {
+      name  = "argocd"
+      value = "argocd.fineract.internal"
+      ttl   = 300
+    },
+    {
+      name  = "uat"
+      value = "uat.fineract.internal"
+      ttl   = 300
+    },
+    {
+      name  = "monitoring"
+      value = "monitoring.fineract.internal"
+      ttl   = 300
+    }
+  
+  ]
+  
+}
+
+variable "enable_private_zone" {
+  description = "Enable Private Route53 Zone"
+  type        = bool
+  default     = false
+}
+
+variable "private_zone_host_name" {
+  description = "Private Route53 Zone Host Name"
+  type        = string
+  default     = "fineract.internal"
+  
+}
+
+
+
