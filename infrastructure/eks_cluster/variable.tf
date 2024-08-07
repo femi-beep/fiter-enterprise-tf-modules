@@ -93,3 +93,19 @@ variable "helm_deploy" {
   type        = bool
   default     = false
 }
+
+variable "enable_private_zone" {
+  description = "Enable Private Route53 Zone"
+  type        = bool
+  default     = false
+}
+
+variable "private_zone_host_name" {
+  description = "Private Route53 Zone Host Name"
+  type        = string
+  default     = "fineract.internal"
+  
+}
+
+
+ 

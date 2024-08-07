@@ -59,6 +59,30 @@ module "eks" {
     coredns = {
       resolve_conflicts_on_create = "OVERWRITE"
       resolve_conflicts_on_update = "OVERWRITE"
+      configuration_values = var.enable_private_zone ? jsonencode({
+          corefile = <<-EOT
+            .:53 {
+              errors
+              health
+              kubernetes cluster.local in-addr.arpa ip6.arpa {
+                pods insecure
+                upstream
+                fallthrough in-addr.arpa ip6.arpa
+              }
+              prometheus :9153
+              forward . /etc/resolv.conf
+              cache 30
+              loop
+              reload
+              loadbalance
+            }
+            ${var.private_zone_host_name}:53 {
+              errors
+              cache 30
+              forward . /etc/resolv.conf
+            }
+          EOT
+      }) : null
     }
     kube-proxy = {
       resolve_conflicts_on_create = "OVERWRITE"

@@ -61,7 +61,10 @@ No modules.
 | <a name="input_nginx_ingress_version"></a> [nginx\_ingress\_version](#input\_nginx\_ingress\_version) | Helm Chart Version for Nginx Ingress Controller | `string` | `"4.7.1"` | no |
 | <a name="input_service_account_arns"></a> [service\_account\_arns](#input\_service\_account\_arns) | Map of Arns from Service Accounts Module | `map(string)` | n/a | yes |
 | <a name="input_vpc_id"></a> [vpc\_id](#input\_vpc\_id) | VPC ID to Deploy Loadbalancer for ALB ingress (Specific to AWS) | `string` | n/a | yes |
-
+| <a name="input_cname_records"></a> [cname\_records](#input\_cname\_records) | List of CNAME records to create in the private zone | `list(map)` | <pre>[ <br>{<br>name  = "argocd"<br>value = "argocd.fineract.internal"<br>ttl   = 300<br>},<br>{<br>name  = "uat"<br>value = "uat.fineract.internal"<br>ttl   = 300<br>},<br>{<br>name  = "monitoring"<br>value = "monitoring.fineract.internal"<br>ttl   = 300<br>}]</pre>| yes |
+| <a name="input_enable_private_zone"></a> [enable\_private\_zone](#input\_enable_\_private\_zone) | Enable Private Route53 Zone for internal domain names | `string` | `false` | no |
+| <a name="input_private_zone_host_name"></a> [_private\_zone\_host\_name](#input\private\_zone\_host\_name) | Private Route53 Zone Host Name | `string` | `"fineract.internal"` | no |
+| <a name="input_nginx_ingress_resources"></a> [nginx\_ingress\_resources](#input\_nginx\_ingress\_resources) | Additional configurations for nginx-ingress controller | `map(any)` | <pre>{<br>"internal_load_balancer": "false"<br>}</pre> | yes |
 ## Outputs
 
 No outputs.
