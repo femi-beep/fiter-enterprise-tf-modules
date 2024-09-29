@@ -47,8 +47,9 @@ locals {
       version          = var.nginx_ingress_version
       namespace        = "kube-system"
       create_namespace = true
-      values           = [templatefile("${path.module}/values/nginx-ingress.yaml", {
-        nginx_ingress_resources : var.nginx_ingress_resources
+      values = [templatefile("${path.module}/values/nginx-ingress.yaml", {
+        nginx_ingress_resources : var.nginx_ingress_resources,
+        aws_load_balancer_scheme : var.nginx_ingress_lb_scheme
       })]
     },
     alb-ingress = {
@@ -72,6 +73,33 @@ locals {
       values = [templatefile("${path.module}/values/external-secret.yaml", {
         external_secret_resources : var.external_secret_resources
       })]
+    },
+    mysql-operator = {
+      enabled          = var.mysql_operator_enabled
+      repository       = "https://mysql.github.io/mysql-operator/"
+      chart            = "mysql-operator"
+      version          = var.mysql_operator_version
+      namespace        = var.mysql_operator_namespace
+      create_namespace = true
+      values = []
+    },
+    postgres-operator = {
+      enabled          = var.postgres_operator_enabled
+      repository       = "https://opensource.zalando.com/postgres-operator/charts/postgres-operator"
+      chart            = "postgres-operator"
+      version          = var.postgres_operator_version
+      namespace        = var.postgres_operator_namespace
+      create_namespace = true
+      values           = []
+    },
+    kube-downscaler = {
+      enabled          = var.kube_downscaler_enabled
+      repository       = "https://caas-team.github.io/helm-charts/"
+      chart            = "py-kube-downscaler"
+      version          = var.kube_downscaler_version
+      namespace        = var.kube_downscaler_namespace
+      create_namespace = true
+      values           = []
     }
   }
   enabled_helm_releases = { for key, value in local.helm_releases : key => value if value.enabled == true }
@@ -94,8 +122,8 @@ resource "helm_release" "this" {
 # CertBot Issuers
 # ------------------------------------------------------------------------------------------------
 resource "kubectl_manifest" "certbot_prod" {
-  count = var.cert_manager_enabled && var.enable_cluster_issuer ? 1 : 0
-  yaml_body = file("${path.module}/manifests/clusterissuer.yaml")
+  count      = var.cert_manager_enabled && var.enable_cluster_issuer ? 1 : 0
+  yaml_body  = file("${path.module}/manifests/clusterissuer.yaml")
   depends_on = [helm_release.this]
 }
 
@@ -167,9 +195,9 @@ resource "kubernetes_secret" "external_secret_irsa" {
 
 resource "kubectl_manifest" "secretmanagerstore" {
   count = var.external_secret_enabled && var.external_aws_secret_manager_store_enabled ? 1 : 0
-  yaml_body = templatefile("${path.module}/manifests/secret-store.yaml",{
+  yaml_body = templatefile("${path.module}/manifests/secret-store.yaml", {
     aws_region = data.aws_region.current.name
-    namespace = var.external_secrets_namespace
+    namespace  = var.external_secrets_namespace
   })
   depends_on = [helm_release.this]
 }
@@ -177,9 +205,9 @@ resource "kubectl_manifest" "secretmanagerstore" {
 
 resource "kubectl_manifest" "parameterstore" {
   count = var.external_secret_enabled && var.external_aws_secret_parameter_store_enabled ? 1 : 0
-  yaml_body = templatefile("${path.module}/manifests/parameter-store.yaml",{
+  yaml_body = templatefile("${path.module}/manifests/parameter-store.yaml", {
     aws_region = data.aws_region.current.name
-    namespace = var.external_secrets_namespace
+    namespace  = var.external_secrets_namespace
   })
   depends_on = [
     helm_release.this
@@ -187,7 +215,7 @@ resource "kubectl_manifest" "parameterstore" {
 }
 
 data "kubernetes_resource" "ingress" {
-  count = var.nginx_ingress_enabled ? 1 : 0
+  count       = var.nginx_ingress_enabled ? 1 : 0
   api_version = "v1"
   kind        = "Service"
 
@@ -195,7 +223,7 @@ data "kubernetes_resource" "ingress" {
     name      = "nginx-ingress-ingress-nginx-controller"
     namespace = "kube-system"
   }
-  depends_on = [ helm_release.this ]
+  depends_on = [helm_release.this]
 }
 
 output "nginx_ingress_hostname" {
@@ -217,6 +245,6 @@ resource "aws_route53_record" "cname_records" {
   type    = "CNAME"
   ttl     = var.cname_records[count.index].ttl
 
-  records = [try(data.kubernetes_resource.ingress[0].object.status.loadBalancer.ingress[0].hostname, null)]
-  depends_on = [ helm_release.this ]
+  records    = [try(data.kubernetes_resource.ingress[0].object.status.loadBalancer.ingress[0].hostname, null)]
+  depends_on = [helm_release.this]
 }

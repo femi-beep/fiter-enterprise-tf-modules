@@ -47,7 +47,7 @@ variable "nginx_ingress_enabled" {
 }
 
 variable "nginx_ingress_version" {
-  default     = "4.8.3"
+  default     = "4.11.2"
   description = "Helm Chart Version for Nginx Ingress Controller"
   type        = string
 }
@@ -165,17 +165,17 @@ variable "nginx_ingress_resources" {
   type        = map(any)
   description = "Additional configurations for nginx-ingress controller"
   default = {
-    "internal_load_balancer": "false"
+    "internal_load_balancer" : "false"
   }
-  
+
 }
 
 
 variable "cname_records" {
   description = "List of CNAME records to create in the private zone"
   type        = list(map(string))
-    default     = [ 
-      {
+  default = [
+    {
       name  = "argocd"
       value = "argocd.fineract.internal"
       ttl   = 300
@@ -190,9 +190,9 @@ variable "cname_records" {
       value = "monitoring.fineract.internal"
       ttl   = 300
     }
-  
+
   ]
-  
+
 }
 
 variable "enable_private_zone" {
@@ -205,8 +205,64 @@ variable "private_zone_host_name" {
   description = "Private Route53 Zone Host Name"
   type        = string
   default     = "fineract.internal"
-  
 }
 
+variable "nginx_ingress_lb_scheme" {
+  description = "AWS Loadbalancer Scheme, can be `internet-facing` or `internal`"
+  type        = string
+  default     = "internet-facing"
+}
 
+variable "mysql_operator_enabled" {
+  description = "Enable Mysql Operator Helm Chart"
+  default     = false
+  type        = bool
+}
 
+variable "mysql_operator_namespace" {
+  description = "Namespace to install MySQL Operator"
+  default     = "devops"
+  type        = string
+}
+
+variable "mysql_operator_version" {
+  default     = "2.2.1  "
+  description = "Helm Chart Version for Cluster Autoscaler"
+  type        = string
+}
+
+variable "postgres_operator_enabled" {
+  description = "Enable Postgres Operator Helm Chart"
+  default     = false
+  type        = bool
+}
+
+variable "postgres_operator_namespace" {
+  description = "Namespace to install Postgres Operator"
+  default     = "devops"
+  type        = string
+}
+
+variable "postgres_operator_version" {
+  default     = "1.13.0"
+  description = "Helm Chart Version for Postgres Operator"
+  type        = string
+}
+
+variable "kube_downscaler_enabled" {
+  description = "Enable Kube Downscaler Helm Chart"
+  default     = false
+  type        = bool
+}
+
+variable "kube_downscaler_namespace" {
+  description = "Namespace to install Kube Downscaler"
+  default     = "devops"
+  type        = string
+}
+
+variable "kube_downscaler_version" {
+  default     = "0.2.8"
+  description = "Helm Chart Version for Kube Downscaler"
+  type        = string
+}
