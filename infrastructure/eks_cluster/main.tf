@@ -340,10 +340,11 @@ resource "null_resource" "custom" {
       arch=$(uname -m)
       if [ "$arch" = "x86_64" ]; then
         arch="amd64"
-      elif [ "$arch" = "aarch64" ]; then
+        wget -q https://dl.k8s.io/release/v${var.cluster_version}.0/bin/linux/$arch/kubectl
+      elif [ "$arch" = "arm64" ]; then
         arch="arm64"
+        wget -q https://dl.k8s.io/release/v${var.cluster_version}.0/bin/darwin/arm64/kubectl
       fi
-      wget -q https://dl.k8s.io/release/v${var.cluster_version}.0/bin/linux/$arch/kubectl
       chmod +x kubectl
     EOF
   }
