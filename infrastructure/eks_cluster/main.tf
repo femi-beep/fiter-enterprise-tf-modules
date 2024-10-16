@@ -36,7 +36,8 @@ data "aws_caller_identity" "current" {}
 
 provider "kubernetes" {
   host                   = module.eks.cluster_endpoint
-  cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+  
+  cluster_ca_certificate = module.eks.cluster_certificate_authority_data != null ? base64decode(module.eks.cluster_certificate_authority_data) : ""
 
   exec {
     api_version = "client.authentication.k8s.io/v1beta1"
@@ -312,10 +313,10 @@ resource "aws_ssm_parameter" "cluster_certificate_data" {
 
 module "eks-kubeconfig" {
   source  = "hyperbadger/eks-kubeconfig/aws"
-  version = "1.0.0"
+  version = "2.0.0"
 
   depends_on = [module.eks]
-  cluster_id = module.eks.cluster_name
+  cluster_name  = module.eks.cluster_name
 }
 
 resource "local_file" "kubeconfig" {
