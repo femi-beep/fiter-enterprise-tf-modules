@@ -1,0 +1,67 @@
+%{~ if length(projects) > 0 ~}
+projects:
+%{~ for project in projects}
+  ${project["project_name"]}:
+    namespace: argocd
+    finalizers:
+    - resources-finalizer.argocd.argoproj.io
+    description: ${project["project_description"]}
+    sourceRepos:
+    - '*'
+    destinations:
+      - server: ${project["destination_server"]}
+        namespace: '${project["destination_namespace"]}'
+    namespaceResourceBlacklist:
+    - group: ''
+      kind: ResourceQuota
+    - group: ''
+      kind: LimitRange
+    - group: ''
+      kind: NetworkPolicy
+    namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'
+    clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
+%{endfor}
+%{~ endif ~}
+
+%{~ if length(applications) > 0 ~}
+applicationsets:
+%{~ for application in applications}
+  ${application["app_name"]}:
+    namespace: argocd
+    finalizers:
+      - resources-finalizer.argocd.argoproj.io
+    goTemplate: true
+    goTemplateOptions: ["missingkey=error"]
+    generators:
+      - clusters: {}
+    ignoreApplicationDifferences:
+      - jsonPointers:
+          - /spec/syncPolicy
+    template:
+      metadata:
+        name: "bootstrap-addons"
+      spec:
+        project: default
+        source:
+          repoURL: ${application["repository_url"]}
+          targetRevision: ${application["branch"]}
+          path: ${application["repo_path"]}
+        destination:
+          server: https://kubernetes.default.svc
+          namespace: argocd
+        syncPolicy:   
+          automated:
+            prune: false
+            selfHeal: false
+        info:
+          - name: url
+            value: https://argoproj.github.io/
+    syncPolicy:
+      # Set Application finalizer
+      preserveResourcesOnDeletion: false
+%{endfor}
+%{~ endif ~}
