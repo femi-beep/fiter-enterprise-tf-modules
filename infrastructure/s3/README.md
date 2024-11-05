@@ -37,5 +37,5 @@ No Modules
 
 | Name | Description |
 |------|-------------|
-| <a name="output_s3_bucket_arn_arn"></a> [s3\_s3_bucket_arn](#output\_s3\_s3_bucket_arn) | ARN of S3 Bucket |
+| <a name="output_s3_bucket_arn"></a> [s3\_s3_bucket_arn](#output\_s3\_s3_bucket_arn) | ARN of S3 Bucket |
 | <a name="output_s3_bucket_id"></a> [s3\_s3_bucket_arn](#output\_s3\_s3_bucket_id) | S3 Bucket ID |
