@@ -16,8 +16,3 @@ module "s3_bucket" {
 
   tags                      = var.tags
 }
-
-output "s3_bucket_arn" {
-  value = module.s3_bucket.s3_bucket_arn
-  
-}
