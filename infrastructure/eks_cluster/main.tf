@@ -35,8 +35,8 @@ locals {
 data "aws_caller_identity" "current" {}
 
 provider "kubernetes" {
-  host                   = module.eks.cluster_endpoint
-  
+  host = module.eks.cluster_endpoint
+
   cluster_ca_certificate = module.eks.cluster_certificate_authority_data != null ? base64decode(module.eks.cluster_certificate_authority_data) : ""
 
   exec {
@@ -61,7 +61,7 @@ module "eks" {
       resolve_conflicts_on_create = "OVERWRITE"
       resolve_conflicts_on_update = "OVERWRITE"
       configuration_values = var.enable_private_zone ? jsonencode({
-          corefile = <<-EOT
+        corefile = <<-EOT
             .:53 {
               errors
               health
@@ -283,19 +283,24 @@ module "eks_log_bucket" {
   }
 }
 
+# Resource to create the service-linked role if it doesn't already exist # change to optional
+resource "aws_iam_service_linked_role" "spot" {
+  aws_service_name = "spot.amazonaws.com"
+}
 
 module "karpenter" {
-  source                 = "terraform-aws-modules/eks/aws//modules/karpenter"
-  version                = "19.20.0"
-  cluster_name           = module.eks.cluster_name
-  irsa_oidc_provider_arn = module.eks.oidc_provider_arn
-
-  policies = {
+  source                  = "terraform-aws-modules/eks/aws//modules/karpenter"
+  version                 = "20.29.0"
+  cluster_name            = module.eks.cluster_name
+  irsa_oidc_provider_arn  = module.eks.oidc_provider_arn
+  enable_v1_permissions   = true
+  enable_irsa             = true
+  create_instance_profile = true
+  create_access_entry     = false
+  node_iam_role_additional_policies = {
     AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
   }
-  irsa_tag_key    = "karpenter.sh/managed-by"
-  irsa_tag_values = [local.cluster_name]
-  tags            = var.common_tags
+  tags = var.common_tags
 }
 
 # POST EKS INSTALL
@@ -315,8 +320,8 @@ module "eks-kubeconfig" {
   source  = "hyperbadger/eks-kubeconfig/aws"
   version = "2.0.0"
 
-  depends_on = [module.eks]
-  cluster_name  = module.eks.cluster_name
+  depends_on   = [module.eks]
+  cluster_name = module.eks.cluster_name
 }
 
 resource "local_file" "kubeconfig" {
