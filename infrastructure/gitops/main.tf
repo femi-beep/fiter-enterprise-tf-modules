@@ -6,6 +6,12 @@ locals {
   local_project = [
     {
       project_name          = var.eks_cluster_name
+      project_description   = "${var.eks_cluster_name} Deployment Project"
+      destination_namespace = "*"
+      destination_server    = "https://kubernetes.default.svc"
+    },
+    {
+      project_name          = "${var.eks_cluster_name}-workloads"
       project_description   = "Argocd Deployment Project"
       destination_namespace = "*"
       destination_server    = "https://kubernetes.default.svc"
@@ -78,13 +84,13 @@ resource "kubernetes_secret_v1" "default_cluster" {
   metadata {
     name      = "${var.eks_cluster_name}-cluster-secret"
     namespace = var.k8s_namespace
-    labels = {
+    labels = merge(var.cluster_labels, {
       "argocd.argoproj.io/secret-type" = "cluster"
       clustername                      = var.eks_cluster_name
       environment                      = var.environment
       region                           = var.aws_region
-    }
-    annotations = var.cluster_labels
+    })
+    annotations = var.cluster_annotations
   }
   data = {
     name   = var.eks_cluster_name

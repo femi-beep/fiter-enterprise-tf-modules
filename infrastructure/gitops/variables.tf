@@ -141,12 +141,17 @@ variable "argoapps_version" {
 }
 
 
+variable "cluster_annotations" {
+  type        = map(any)
+  description = "Annotations to add to argocd cluster secret"
+  default     = {}
+}
+
 variable "cluster_labels" {
   type        = map(any)
   description = "Labels to add to argocd cluster secret"
   default     = {}
 }
-
 
 variable "environment" {
   type        = string

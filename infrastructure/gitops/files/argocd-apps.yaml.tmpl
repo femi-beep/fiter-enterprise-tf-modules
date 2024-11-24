@@ -38,9 +38,6 @@ applicationsets:
     goTemplateOptions: ["missingkey=error"]
     generators:
       - clusters: {}
-    ignoreApplicationDifferences:
-      - jsonPointers:
-          - /spec/syncPolicy
     template:
       metadata:
         name: "bootstrap-addons"
