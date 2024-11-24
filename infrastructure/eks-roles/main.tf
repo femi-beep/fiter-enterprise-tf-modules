@@ -43,8 +43,8 @@ locals {
     },
     external_dns = {
       role_name           = "${var.eks_cluster_name}-extDNS"
-      namespace           = var.ca_k8s_namespace
-      serviceaccount_name = var.ca_sa_name
+      namespace           = var.extDNS_k8s_namespace
+      serviceaccount_name = var.extDNS_sa_name
       role_policy_arn     = [aws_iam_policy.external_dns.arn]
       enabled             = var.enable_external_dns
     },
