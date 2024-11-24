@@ -9,7 +9,7 @@ locals {
   }
 
   karpenter_tag = {
-    "karpenter.sh/discovery" = local.name
+    "karpenter.sh/discovery" = "${var.customer}-${var.environment}"
     type                     = "private"
   }
   private_subnet_tags = var.enable_karpenter_autoscaler ? merge(local.private_tag, local.karpenter_tag) : local.private_tag

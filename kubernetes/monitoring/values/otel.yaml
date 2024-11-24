@@ -1,4 +1,6 @@
 manager:
+collectorImage:
+  repository: "otel/opentelemetry-collector-k8s"
   ports:
     metricsPort: 8080
     webhookPort: 9443
