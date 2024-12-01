@@ -227,7 +227,7 @@ variable "mysql_operator_namespace" {
 
 variable "mysql_operator_version" {
   default     = "2.2.1  "
-  description = "Helm Chart Version for Cluster Autoscaler"
+  description = "Helm Chart Version for Mysql"
   type        = string
 }
 

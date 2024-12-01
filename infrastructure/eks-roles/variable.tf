@@ -17,7 +17,7 @@ variable "argocd_k8s_namespace" {
 }
 
 variable "argocd_sa_name" {
-  default     = "*"
+  default     = "argo*"
   type        = string
   description = "(Optional) Kubernetes Service Account for ArgoCD Controller"
 }
@@ -119,7 +119,7 @@ variable "monitoring_sa_name" {
 }
 
 variable "external_secret_sa_name" {
-  default     = "*"
+  default     = "external-secrets*"
   description = "Service Account Name for External Secrets"
   type        = string
 }

@@ -33,7 +33,7 @@ locals {
   os = lower(data.external.os.result["os"])
   karpenter_auth_roles = [
     {
-      rolearn  = module.karpenter.role_arn
+      rolearn  = module.karpenter.node_iam_role_arn
       username = "system:node:{{EC2PrivateDNSName}}"
       groups = [
         "system:bootstrappers",

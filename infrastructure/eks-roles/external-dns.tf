@@ -31,3 +31,5 @@ data "aws_iam_policy_document" "external_dns" {
     resources = ["*"]
   }
 }
+
+# to do restrict to specific dns names
