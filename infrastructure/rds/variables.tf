@@ -142,3 +142,18 @@ variable "deletion_protection" {
   type        = bool
   default     = false
 }
+
+
+variable "enable_performance_insights" {
+  description = "Enable Performance Insights"
+  type        = bool
+  default     = true
+  
+}
+
+variable "storage_type" {
+  description = "Storage Type for RDS"
+  type        = string
+  default     = "gp3"
+  
+}

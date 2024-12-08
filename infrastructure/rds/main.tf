@@ -88,6 +88,10 @@ module "db" {
   # deletion_protection = var.rds_db_delete_protection
   publicly_accessible = local.publicly_accessible # set to false to enforce it is not publicly accessible
 
+  storage_type = var.storage_type
+
+  # Enable Performance Insights
+  performance_insights_enabled = var.enable_performance_insights
 }
 
 
