@@ -135,10 +135,15 @@ resource "kubernetes_secret_v1" "argocd_repositories" {
       "argocd.argoproj.io/secret-type" = "repository"
     }
   }
-  data = {
-    type          = each.value.type
+  data = each.value.type == "ssh" ? {
+    type          = "git"
     sshPrivateKey = each.value.generate_ssh ? tls_private_key.argocdsshkey[each.key].private_key_openssh : each.value.ssh_key
     url           = each.value.url
+    } : {
+    type     = "git"
+    username = each.value.username
+    url      = each.value.url
+    password = each.value.password
   }
   depends_on = [helm_release.argocd]
 }

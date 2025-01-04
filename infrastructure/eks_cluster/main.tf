@@ -49,7 +49,7 @@ provider "kubernetes" {
 
 module "eks" {
   source          = "terraform-aws-modules/eks/aws"
-  version         = "~> 19.0"
+  version         = "~> 20.0"
   cluster_name    = local.cluster_name
   cluster_version = var.cluster_version
   subnet_ids      = var.subnets
@@ -127,7 +127,7 @@ module "eks" {
   }
 
   create_iam_role = true
-
+  enable_cluster_creator_admin_permissions = false
   eks_managed_node_groups = {
     for key, value in var.node_groups_attributes :
     key => {
@@ -164,15 +164,8 @@ module "eks" {
   tags = merge(var.common_tags, {
     "karpenter.sh/discovery" = local.cluster_name
   })
-
-  manage_aws_auth_configmap = true
-
-  aws_auth_roles = local.eks_auth_roles
-
-  aws_auth_users = local.eks_auth_users
 }
 
-# add support for fully private clusters
 module "endpoints" {
   count                 = var.cluster_endpoint_public_access ? 0 : 1
   source                = "terraform-aws-modules/vpc/aws//modules/vpc-endpoints"

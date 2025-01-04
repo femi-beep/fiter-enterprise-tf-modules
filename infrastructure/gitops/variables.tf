@@ -16,6 +16,8 @@ variable "argocd_repos" {
     ssh_key      = optional(string, "")
     url          = string
     generate_ssh = optional(bool, false)
+    username     = optional(string, "")
+    password     = optional(string, "")
   }))
   default = {}
 }

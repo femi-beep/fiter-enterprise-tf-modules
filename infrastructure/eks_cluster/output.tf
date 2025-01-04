@@ -49,3 +49,12 @@ output "oidc_provider_arn" {
 output "cluster_certificate_authority_data" {
   value = module.eks.cluster_certificate_authority_data
 }
+
+# temp support to error from aws-auth module
+output "aws_auth_configmap_data" {
+  value = {
+    mapRoles    = yamlencode(local.eks_auth_roles)
+    mapUsers    = yamlencode(local.eks_auth_users)
+    mapAccounts = yamlencode([])
+  }
+}
