@@ -40,7 +40,7 @@ applicationsets:
       - clusters: {}
     template:
       metadata:
-        name: "bootstrap-addons"
+        name: ${application["app_name"]}
       spec:
         project: default
         source:
