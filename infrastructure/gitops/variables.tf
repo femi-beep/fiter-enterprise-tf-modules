@@ -20,6 +20,12 @@ variable "argocd_repos" {
     password     = optional(string, "")
   }))
   default = {}
+  validation {
+    condition = alltrue([
+      for key, value in var.argocd_repos : contains(["git", "ssh"], value.type)
+    ])
+    error_message = "type can be only be `ssh` or `git`"
+  }
 }
 
 variable "argocd_clients" {
