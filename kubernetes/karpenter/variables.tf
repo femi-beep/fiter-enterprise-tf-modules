@@ -17,11 +17,6 @@ variable "cluster_name" {
   type        = string
 }
 
-variable "cluster_endpoint" {
-  description = "EKS Cluster Endpoint"
-  type        = string
-}
-
 variable "instance_profile_name" {
   description = "Karpenter Nodes Instance Profile for AWS-AUTH"
   type        = string
@@ -33,7 +28,13 @@ variable "eks_node_security_group_id" {
 
 }
 
-variable "vpc_private_subnets" {
-  description = "AWS Subnets to Deploy Karpenter Nodes"
-  type        = list(string)
+variable "karpenter_queue_name" {
+  description = "Karpenter SQS Queue Name"
+  type        = string
+}
+
+variable "node_config" {
+  description = "Node Configuration for Karpenter"
+  type        = map(any)
+  default     = {}
 }
