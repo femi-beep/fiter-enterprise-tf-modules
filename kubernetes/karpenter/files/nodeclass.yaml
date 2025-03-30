@@ -31,6 +31,6 @@ spec:
         volumeSize: ${NODE_VOLUME_SIZE}
         volumeType: ${NODE_VOLUME_TYPE}
         encrypted: ${NODE_ENCRYPTION_ENABLED}
-        iops: 3000
+        iops: ${NODE_IOPS}
         deleteOnTermination: true
         throughput: 125
