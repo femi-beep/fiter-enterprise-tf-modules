@@ -38,3 +38,15 @@ variable "node_config" {
   type        = map(any)
   default     = {}
 }
+
+variable "use_custom_nodepool" {
+  description = "Use Custom Nodepool"
+  type        = bool
+  default     = false
+}
+
+variable "custom_nodepool_path" {
+  description = "Path to Custom Nodepool YAML"
+  type        = string
+  default     = "karpenter/nodepool.yaml"
+}

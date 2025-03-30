@@ -2,7 +2,7 @@ locals {
   eks_log_bucket = "${var.eks_logging_bucketname}-${local.cluster_name}-${local.account_id}"
   account_id     = data.aws_caller_identity.current.id
   prefix         = format("%s-%s", var.customer, var.environment)
-  cluster_name   = "${var.customer}-${var.environment}"
+  cluster_name   = local.prefix
   args           = var.assume_role_arn == "" ? ["eks", "get-token", "--cluster-name", local.cluster_name] : ["eks", "get-token", "--cluster-name", local.cluster_name, "--role-arn", "${var.assume_role_arn}"]
   interface_endpoints = { for endpoint in var.vpc_interface_endpoints : endpoint => {
     service             = endpoint

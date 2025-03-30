@@ -1,0 +1,50 @@
+apiVersion: karpenter.sh/v1
+kind: NodePool
+metadata:
+  name: platform-nodepool
+spec:
+  disruption:
+    budgets:
+    - nodes: 10%
+    consolidateAfter: 1m
+    consolidationPolicy: WhenEmptyOrUnderutilized
+  limits:
+    cpu: "32"
+    memory: 128Gi
+  template:
+    spec:
+      expireAfter: 720h
+      nodeClassRef:
+        group: karpenter.k8s.aws
+        kind: EC2NodeClass
+        name: platform-nodeclass
+      requirements:
+      - key: karpenter.k8s.aws/instance-category
+        minValues: 2
+        operator: In
+        values:
+        - m
+        - t
+        - r
+        - c
+      - key: karpenter.k8s.aws/instance-cpu
+        operator: In
+        values:
+        - "2"
+        - "4"
+        - "8"
+      - key: karpenter.k8s.aws/instance-generation
+        operator: Gt
+        values:
+        - "2"
+      - key: kubernetes.io/arch
+        operator: In
+        values:
+        - amd64
+      - key: karpenter.sh/capacity-type
+        operator: In
+        values:
+        - spot
+        - on-demand
+      terminationGracePeriod: 1h
+  weight: 10

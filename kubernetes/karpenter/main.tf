@@ -48,6 +48,13 @@ resource "kubectl_manifest" "karpenter_nodeclass" {
 }
 
 resource "kubectl_manifest" "karpenter_nodepool" {
-  yaml_body = file("${path.cwd}/karpenter/nodepool.yaml")
-  depends_on = [ kubectl_manifest.karpenter_nodeclass ]
+  count      = var.use_custom_nodepool ? 0 : 1
+  yaml_body  = file("${path.module}/files/nodepool.yaml")
+  depends_on = [kubectl_manifest.karpenter_nodeclass]
+}
+
+resource "kubectl_manifest" "karpenter_custom_nodepool" {
+  count      = var.use_custom_nodepool ? 1 : 0
+  yaml_body  = file("${path.cwd}/${var.custom_nodepool_path}")
+  depends_on = [kubectl_manifest.karpenter_nodeclass]
 }
