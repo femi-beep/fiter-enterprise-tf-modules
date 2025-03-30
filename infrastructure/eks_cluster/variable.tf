@@ -1,96 +1,100 @@
 variable "customer" {
-  description = "(Required) Name of Customer. ex: Fiter"
   type        = string
+  description = "(Required) Name of Customer. ex: Fiter"
 }
 
 variable "environment" {
-  description = "(Required) Environment e.g Dev, Stg, Prod"
   type        = string
+  description = "(Required) Environment e.g Dev, Stg, Prod"
 }
 
 variable "cluster_version" {
+  type        = string
   description = "AWS EKS Cluster Version"
   default     = "1.25"
-  type        = string
 }
 # variable "cluster_encryption_key_arn" {} # aws_kms_key.k8s_secrets.arn. can be reused?
 variable "common_tags" {
-  description = "(Required) Resource Tag"
   type        = map(any)
+  description = "(Required) Resource Tag"
 }
 
 variable "node_groups_attributes" {
-  description = "Node Group Properties. Used to Provision EKS node groups"
   type        = map(any)
+  description = "Node Group Properties. Used to Provision EKS node groups"
 }
 
-variable "node_security_group_additional_rules" {}
+variable "node_security_group_additional_rules" {
+  description = "Additional Rules for Node Security Group"
+
+}
 
 variable "vpc_id" {
-  description = "ID of the VPC where the cluster security group will be provisioned"
   type        = string
+  description = "ID of the VPC where the cluster security group will be provisioned"
 }
 variable "subnets" {
-  description = "A list of subnet IDs where the nodes/node groups will be provisioned."
   type        = list(string)
+  description = "A list of subnet IDs where the nodes/node groups will be provisioned."
 }
 
 variable "aws_auth_users" {
-  description = "List of User maps to add to the aws-auth configmap"
   type        = list(any)
+  description = "List of User maps to add to the aws-auth configmap"
 }
 
 variable "aws_auth_roles" {
+  type        = list(any)
   description = "List of role maps to add to the aws-auth configmap"
   default     = []
-  type        = list(any)
 }
 
 variable "cluster_endpoint_public_access" {
+  type        = bool
   description = "Indicates whether or not the Amazon EKS public API server endpoint is enabled, set to False to enable only private access via VPN"
   default     = true
-  type        = bool
 }
 
 variable "cluster_endpoint_public_access_cidrs" {
+  type        = list(string)
   description = "List of CIDR blocks which can access the Amazon EKS public API server endpoint"
   default     = ["0.0.0.0/0"]
-  type        = list(string)
 }
 
 
 variable "eks_logging_bucketname" {
+  type        = string
   default     = "eks-logs"
   description = "AWS Bucket Name to Send EKS Logs"
 }
 
 variable "assume_role_arn" {
-  description = "Terraform Role to Assume"
   type        = string
+  description = "Terraform Role to Assume"
   default     = ""
 }
 
 variable "route_table_ids" {
-  description = "Route Table ID for the s3 gateway endpoint if privake only cluster is used"
   type        = list(string)
+  description = "Route Table ID for the s3 gateway endpoint if privake only cluster is used"
   default     = []
 }
 
 variable "vpc_interface_endpoints" {
-  description = "List of Services to create VPC interface Endpoints. Used for Private Clusters"
   type        = list(string)
+  description = "List of Services to create VPC interface Endpoints. Used for Private Clusters"
   default     = []
 }
 
 variable "vpc_gateway_endpoints" {
-  description = "List of Services to create VPC Gateway Endpoints. Used for Private Clusters"
   type        = list(string)
+  description = "List of Services to create VPC Gateway Endpoints. Used for Private Clusters"
   default     = []
 }
 
 variable "helm_deploy" {
-  description = "Create Helm Deployment User in Cluster"
   type        = bool
+  description = "Create Helm Deployment User in Cluster"
   default     = false
 }
 
@@ -99,13 +103,41 @@ variable "enable_private_zone" {
   type        = bool
   default     = false
 }
+variable "additional_cluster_policies" {
+  type        = map(any)
+  description = "Additional Policies to attach to the EKS Cluster"
+  default     = {}
+}
 
 variable "private_zone_host_name" {
   description = "Private Route53 Zone Host Name"
   type        = string
   default     = "fineract.internal"
-  
+
 }
 
+variable "log_bucket_lifecycle_rules" {
+  type = map(object({
+    path            = string
+    expiration_days = number
+  }))
+  description = "Number of days to retain the logs in the bucket"
+  default = {
+    logs = {
+      path            = "loki_logs/"
+      expiration_days = 30
+    }
+  }
+}
 
- 
+variable "eks_access_entries" {
+  type        = map(any)
+  description = "Map of EKS Access Entries"
+  default     = {}
+}
+
+variable "authentication_mode" {
+  type        = string
+  description = "Authentication Mode for EKS Cluster"
+  default     = "API_AND_CONFIG_MAP"
+}

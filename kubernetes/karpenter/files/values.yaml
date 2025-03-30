@@ -1,11 +1,18 @@
 replicas: 1
+settings:
+  featureGates:
+    spotToSpotConsolidation: true
+  clusterName: ${CLUSTER_NAME}
+  interruptionQueue: ${KARPENTER_QUEUE_NAME}
 serviceAccount:
   annotations:
-    eks.amazonaws.com/role-arn: ${KARPENTER_IAM_ROLE_ARN} 
-
-settings:
-  aws:
-    clusterName: ${CLUSTER_NAME}
-    clusterEndpoint: ${CLUSTER_ENDPOINT}
-    defaultInstanceProfile: ${INSTANCE_PROFILE_NAME}
-    interruptionQueueName: Karpenter-${CLUSTER_NAME}
+    eks.amazonaws.com/role-arn: ${KARPENTER_IAM_ROLE_ARN}
+serviceMonitor:
+  enabled: false
+controller:
+  resources:
+    requests:
+      cpu: 64m
+      memory: 400Mi
+    limits:
+      memory: 800Mi
