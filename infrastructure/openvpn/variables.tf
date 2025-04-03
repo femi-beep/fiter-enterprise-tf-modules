@@ -21,10 +21,10 @@ variable "vpn_server_instance_type" {
   description = "Instance type to deploy server"
   type        = string
   default     = "t2.micro"
-  
+
 }
 
-variable vpn_server_ami {
+variable "vpn_server_ami" {
   description = "AMI to deploy server"
   type        = string
 }
@@ -33,7 +33,7 @@ variable "vpn_authorized_access_cidr" {
   description = "CIDR block to allow access to VPN"
   type        = list(string)
   default     = ["0.0.0.0/0"]
-  
+
 }
 
 
@@ -45,7 +45,7 @@ variable "common_tags" {
 variable "vpn_vpc_id" {
   description = "VPC ID"
   type        = string
-  
+
 }
 
 variable "subnet_id" {
@@ -62,13 +62,13 @@ variable "key_name" {
   description = "Name of the SSH key to use for the OpenVPN server"
   type        = string
   default     = "openvpn_accessserver_key"
-  
+
 }
 
-variable "private_dns_server"{
-  type = string
+variable "private_dns_server" {
+  type        = string
   description = "value of the private dns server, should be based on vpc cidr"
-  default = "172.16.0.2"
+  default     = "172.16.0.2"
 }
 
 output "openvpn_setup_instructions" {

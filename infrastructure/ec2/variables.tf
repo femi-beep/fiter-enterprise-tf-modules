@@ -1,88 +1,90 @@
 variable "instance_type" {
-  description = "Description: The type of instance to start"
   type        = string
+  description = "Description: The type of instance to start"
   default     = "t3.micro"
 }
 
 variable "key_name" {
-  default     = null
   type        = string
   description = "Key name of the Key Pair to use for the instance"
+  default     = null
 }
 
 variable "associate_public_ip_address" {
+  type        = bool
   description = "Whether to associate a public IP address with an instance in a VPC"
   default     = null
-  type        = bool
 }
 
 variable "create_timeout" {
-  default = "10m"
-  type    = string
+  type        = string
+  description = "value of the timeout to create the resource"
+  default     = "10m"
 }
 
 variable "delete_timeout" {
-  default = "10m"
-  type    = string
+  type        = string
+  description = "value of the timeout to delete the resource"
+  default     = "10m"
 }
 
 variable "ami_image_id" {
   type        = string
-  default     = ""
   description = "ID of AMI to use for the instance"
+  default     = ""
 }
 
 variable "create_key_pair" {
-  description = "Create AWS Key Pair, Set to False if Key already exists in AWS"
   type        = bool
+  description = "Create AWS Key Pair, Set to False if Key already exists in AWS"
   default     = false
 }
 
 variable "instance_name" {
-  description = "Name to be used on EC2 instance created"
   type        = string
+  description = "Name to be used on EC2 instance created"
 }
 
 variable "disable_api_termination" {
+  type        = bool
   description = "If true, enables EC2 Instance Termination Protection"
   default     = false
-  type        = bool
 }
 
 variable "enable_hibernation_support" {
-  default     = false
   description = "If true, the launched EC2 instance will support hibernation"
   type        = bool
+  default     = false
 }
 
 variable "create_security_group" {
-  description = "Create EC2 Security Group, Set to False to Use Existing Security Group"
-  default     = true
   type        = bool
+  default     = true
+  description = "Create EC2 Security Group, Set to False to Use Existing Security Group"
 }
 
 variable "security_group_ids" {
+  type        = list(string)
   description = "List of Existing Security Groups to Use, Ignored if Create Security Group is enabled"
   default     = []
-  type        = list(string)
 }
 
 variable "sg_ingress_cidr" {
+  type        = list(string)
   description = "List of CIDRs to Allow in Security Group, Defaults to the VPC CIDR if ignored."
   default     = []
-  type        = list(string)
 }
 
 variable "sg_ingress_ports" {
-  description = "List of Ingress Ports to Allow in Security Group"
   type        = list(number)
+  description = "List of Ingress Ports to Allow in Security Group"
   default     = [80]
 }
 
 variable "sg_ingress_protocol" {
+  type        = string
   description = "Ingress Protocol Name"
   default     = "tcp"
-  type        = string
 }
 
 # variable "vpc_name" {
@@ -92,38 +94,38 @@ variable "sg_ingress_protocol" {
 # }
 
 variable "subnets" {
-  description = "Name of VPC Subnets to Deploy EC2"
   type        = list(string)
+  description = "Name of VPC Subnets to Deploy EC2"
 }
 
 variable "ebs_volume_size" {
-  default     = 50
-  description = "EBS Volume Size"
   type        = number
+  description = "EBS Volume Size"
+  default     = 50
 }
 
 variable "ebs_volume_type" {
-  default     = "gp3"
-  description = "EBS Volume Type"
   type        = string
+  description = "EBS Volume Type"
+  default     = "gp3"
 }
 
 variable "enable_encrypted_volume" {
-  default     = true
-  description = "Enable EBS Volume Encryption"
   type        = bool
+  description = "Enable EBS Volume Encryption"
+  default     = true
 }
 
 variable "instance_iam_policies" {
-  default     = {}
-  description = "Map of Policies to Add to Instance Profile"
   type        = map(any)
+  description = "Map of Policies to Add to Instance Profile"
+  default     = {}
 }
 
 variable "additional_ebs_volumes" {
   type        = list(any)
-  default     = []
   description = "List of Map of Additional EBS Volumes"
+  default     = []
 }
 
 variable "tags" {

@@ -1,4 +1,18 @@
-#
+/*
+ * # AWS ElastiCache Terraform Module
+ *
+ * This module manages AWS ElastiCache clusters, including security groups, parameter groups, subnet groups, and CloudWatch alarms.
+ *
+ * It provisions ElastiCache replication groups for Redis, supporting advanced features like cluster mode, encryption, automatic failover, and custom configurations. 
+ * Security groups are created to control ingress/egress rules, and subnet groups ensure proper network placement. 
+ * The module also allows the creation or import of parameter groups for advanced Redis settings.
+ *
+ * CloudWatch alarms are configured to monitor key metrics like CPU utilization and freeable memory, with customizable thresholds and actions.
+ *
+ * Additionally, the module provides flexible configuration options, allowing seamless management of cluster lifecycles, logging, and dynamic resource scaling.
+ *
+ */
+
 # Security Group Resources
 #
 locals {
@@ -9,7 +23,7 @@ locals {
   }
   security_group_map    = { for key in var.allowed_cidrs : key.name => key }
   create_security_group = local.enabled && var.create_security_group
-  replication_group_id = var.replication_group_id == "" ? var.cache_identifier : var.replication_group_id
+  replication_group_id  = var.replication_group_id == "" ? var.cache_identifier : var.replication_group_id
 }
 
 resource "aws_security_group" "service" {
@@ -42,7 +56,7 @@ resource "aws_vpc_security_group_ingress_rule" "access_ingress" {
 }
 
 resource "aws_vpc_security_group_egress_rule" "egress" {
-  count       = local.enabled && var.create_security_group ? 1 : 0
+  count             = local.enabled && var.create_security_group ? 1 : 0
   security_group_id = aws_security_group.service[0].id
   cidr_ipv4         = "0.0.0.0/0"
   ip_protocol       = "-1"

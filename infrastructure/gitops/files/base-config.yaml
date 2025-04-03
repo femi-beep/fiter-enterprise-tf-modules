@@ -12,13 +12,6 @@ server:
   extraArgs:
     - --insecure
   logLevel: debug
-  serviceAccount:
-    annotations:
-      eks.amazonaws.com/role-arn: ${argocd_role_arn}
-controller:
-  serviceAccount:
-    annotations:
-      eks.amazonaws.com/role-arn: ${argocd_role_arn}
 
 # only supports slack. Add More integrations as clients come up
 notifications:
@@ -285,16 +278,29 @@ dex:
 configs:
   cm:
     url: "https://${argocd_domain}"
-    accounts.argocd-developer: login
+    %{~ for devuser in devusers ~}
+    accounts.${devuser}: login
+    %{~ endfor ~}
+    %{~ for adminuser in admin_users ~}
+    accounts.${adminuser}: login
+    %{~ endfor ~}
+    exec.enabled: ${enable_ui_exec}
   rbac:
-    policy.default: "role:readonly"
+    policy.default: ''
     policy.csv: |
-      %{~ for project in projects ~}
-      p, role:org-admin, applications, *, ${project["project_name"]}/*, allow
-      p, role:org-admin, projects, *, ${project["project_name"]}, allow
+      %{~ for project in developer_projects ~}
+      p, role:developers, logs, get, ${project["project_name"]}/*, allow
+      p, role:developers, applications, action/apps/Deployment/restart, ${project["project_name"]}/*, allow
+      p, role:developers, applications, action/apps/StatefulSet/restart, ${project["project_name"]}/*, allow
+      p, role:developers, applications, get, ${project["project_name"]}/*, allow
+      p, role:developers, applications, sync, ${project["project_name"]}/*, allow
+      p, role:developers, projects, get, ${project["project_name"]}/*, allow
+      p, role:developers, exec, create, ${project["project_name"]}/*, allow
       %{~ endfor ~}
-      p, role:org-admin, clusters, get, *, allow
-      p, role:org-admin, logs, get, *, allow
-      p, role:org-admin, exec, create, */*, allow
-      g, argocd-developer, role:org-admin
+      %{~ for devuser in devusers ~}
+      g, ${devuser}, role:developers
+      %{~ endfor ~}
+      %{~ for adminuser in admin_users ~}
+      g, ${adminuser}, role:admin
+      %{~ endfor ~}
     scopes: "[groups]"

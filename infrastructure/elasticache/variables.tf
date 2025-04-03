@@ -1,7 +1,7 @@
 variable "enabled" {
   type        = bool
-  default     = false
   description = "Set to false to prevent the module from creating any resources"
+  default     = false
 }
 
 variable "cache_identifier" {
@@ -20,25 +20,25 @@ variable "vpc_id" {
 
 
 variable "vpc_cidr_block" {
-  description = "VPC CIDR Block to Allow Connections to the Database"
   type        = string
+  description = "VPC CIDR Block to Allow Connections to the Database"
 }
 
 variable "cache_port" {
-  description = "Cache Port to Use"
   type        = number
+  description = "Cache Port to Use"
   default     = 6379
 }
 
 variable "allowed_cidrs" {
-  description = "Allowed Cidrs in the Database"
   type = list(object({
     name        = string
     ip          = string
     description = string
     port        = optional(string, null)
   }))
-  default = []
+  description = "Allowed Cidrs in the Database"
+  default     = []
 }
 
 variable "elasticache_subnet_group_name" {
@@ -67,26 +67,26 @@ variable "cluster_mode_replicas_per_node_group" {
 
 variable "cluster_size" {
   type        = number
-  default     = 1
   description = "Number of nodes in cluster. *Ignored when `cluster_mode_enabled` == `true`*"
+  default     = 1
 }
 
 variable "family" {
   type        = string
-  default     = "redis4.0"
   description = "Redis family"
+  default     = "redis4.0"
 }
 
 variable "parameter_group_name" {
   type        = string
-  default     = null
   description = "Override the default parameter group name"
+  default     = null
 }
 
 variable "create_parameter_group" {
   type        = bool
-  default     = true
   description = "Whether new parameter group should be created. Set to false if you want to use existing parameter group"
+  default     = true
 }
 
 variable "subnets" {
@@ -97,8 +97,8 @@ variable "subnets" {
 
 variable "parameter_group_description" {
   type        = string
-  default     = null
   description = "Managed by Terraform"
+  default     = null
 }
 
 variable "parameter" {
@@ -106,18 +106,18 @@ variable "parameter" {
     name  = string
     value = string
   }))
-  default     = []
   description = "A list of Redis parameters to apply. Note that parameters may differ from one Redis family to another"
+  default     = []
 }
 
 
 variable "transit_encryption_enabled" {
   type        = bool
-  default     = false
   description = <<-EOT
     Set `true` to enable encryption in transit. Forced `true` if `var.auth_token` is set.
     If this is enabled, use the [following guide](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/in-transit-encryption.html#connect-tls) to access redis.
     EOT
+  default     = false
 }
 
 variable "auth_token" {
@@ -299,7 +299,7 @@ variable "associated_security_group_ids" {
 }
 
 variable "security_group_description" {
-  type = string
-  default = ""
+  type        = string
+  default     = ""
   description = "Optional String for describing the created security group"
 }

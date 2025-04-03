@@ -1,6 +1,6 @@
 # Password resource
 resource "random_password" "password" {
-  count             = var.create_vpn_server ? 1 : 0
+  count            = var.create_vpn_server ? 1 : 0
   length           = 20
   special          = true
   override_special = "!#$%&*()-_=+[]{}<>:?"
@@ -38,10 +38,10 @@ resource "aws_instance" "openvpn" {
   ami                    = var.vpn_server_ami
   instance_type          = var.vpn_server_instance_type
   vpc_security_group_ids = var.create_vpn_server ? [aws_security_group.instance[0].id] : []
-  subnet_id              = var.subnet_id 
+  subnet_id              = var.subnet_id
   key_name               = var.key_name
 
-  user_data =  <<-EOF
+  user_data = <<-EOF
               #!/bin/bash
 
 
@@ -116,7 +116,7 @@ resource "aws_security_group" "instance" {
     protocol    = "tcp"
     cidr_blocks = var.vpn_authorized_access_cidr
   }
-  
+
   vpc_id = var.vpn_vpc_id
   ingress {
     description = "Admin access to the OpenVPN server"
@@ -128,7 +128,7 @@ resource "aws_security_group" "instance" {
 
   ingress {
     description = "OpenVPN access to the OpenVPN server"
-    from_port   = 1194  # Default OpenVPN port
+    from_port   = 1194 # Default OpenVPN port
     to_port     = 1194
     protocol    = "udp"
     cidr_blocks = var.vpn_authorized_access_cidr

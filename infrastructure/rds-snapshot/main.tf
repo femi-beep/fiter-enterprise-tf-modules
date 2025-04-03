@@ -1,3 +1,15 @@
+/*
+ * # AWS RDS Terraform Module
+ *
+ * This module provisions an RDS instance from a snapshot and manages related resources such as security groups, ingress, and egress rules.
+ *
+ * ## Features
+ * - Creates an RDS instance using the AWS RDS module.
+ * - Manages an RDS DB snapshot.
+ * - Provisions and configures security groups, including ingress and egress rules.
+ * - Configurable through input variables to adapt to different environments.
+ *
+ */
 resource "aws_db_snapshot" "db" {
   db_instance_identifier = var.snapshot_db_name
   db_snapshot_identifier = "${var.snapshot_db_name}-snapshot-${formatdate("YYYY-MM-DD", timestamp())}"
@@ -6,16 +18,6 @@ resource "aws_db_snapshot" "db" {
       db_snapshot_identifier
     ]
   }
-}
-
-locals {
-  db_port             = var.db_port
-  publicly_accessible = var.disable_rds_public_access ? false : true
-  tags = {
-    Name    = var.db_identifier
-    OwnedBy = "Terraform"
-  }
-  security_group_map = { for key in var.allowed_cidrs: key.name => key}
 }
 
 resource "aws_security_group" "service" {
@@ -51,7 +53,7 @@ resource "aws_vpc_security_group_egress_rule" "egress" {
 
 module "db" {
   source                      = "terraform-aws-modules/rds/aws"
-  version                     = "6.1.1"
+  version                     = "6.10.0"
   identifier                  = var.db_identifier
   engine                      = var.engine
   engine_version              = var.engine_version
@@ -74,7 +76,7 @@ module "db" {
   monitoring_interval         = var.monitoring_interval
   monitoring_role_name        = "${var.db_identifier}RDSMonitoringRole"
   create_monitoring_role      = var.create_monitoring_role
-  storage_encrypted           = var.encrypyt_db_storage
+  storage_encrypted           = var.encrypt_db_storage
   storage_type                = var.storage_type
   iops                        = var.iops
   ca_cert_identifier          = var.ca_cert_identifier
@@ -82,9 +84,6 @@ module "db" {
   performance_insights_enabled          = var.performance_insights_enabled
   performance_insights_retention_period = var.performance_insights_retention_period
   apply_immediately                     = var.apply_immediately
-
-  tags = local.tags
-
 
   # DB subnet group
   create_db_subnet_group = true
@@ -99,5 +98,8 @@ module "db" {
   skip_final_snapshot = true
   # Database Deletion Protection change on production
   deletion_protection = var.rds_db_delete_protection
+
   publicly_accessible = local.publicly_accessible # set to false to enforce it is not publicly accessible
+
+  tags = local.tags
 }

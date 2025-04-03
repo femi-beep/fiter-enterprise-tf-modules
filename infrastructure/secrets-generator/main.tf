@@ -1,12 +1,26 @@
+/**
+ * # Secrets Generator Module
+ * This Terraform module is responsible for generating secrets for the infrastructure.
+ * It is designed to be reusable and can be integrated into various parts of the infrastructure
+ * to ensure that secrets are consistently and securely generated.
+ * 
+ * The module will output the generated secrets which can be used in other parts of your infrastructure.
+ *
+*/
+
 data "aws_caller_identity" "current" {}
+
+locals {
+  secret_readers = var.secret_reader_arns == [] ? ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"] : var.secret_reader_arns
+}
 
 module "secrets_manager" {
   for_each = var.secrets
   source   = "terraform-aws-modules/secrets-manager/aws"
 
   # Secret
-  name                    = "/kubernetes/${var.clustername}/${each.key}"
-  description             = "Generated Secrets"
+  name                    = "kubernetes/${var.clustername}/${each.key}"
+  description             = "Generated ${each.key} Secret"
   recovery_window_in_days = 7
 
   # Policy
@@ -17,7 +31,7 @@ module "secrets_manager" {
       sid = "AllowAccountRead"
       principals = [{
         type        = "AWS"
-        identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"] #change to specific secret
+        identifiers = local.secret_readers
       }]
       actions   = ["secretsmanager:GetSecretValue"]
       resources = ["*"]
@@ -30,23 +44,4 @@ module "secrets_manager" {
   random_password_override_special = each.value.overridesSpecialChar
 
   tags = var.common_tags
-}
-
-variable "secrets" {
-  type = map(object({
-    passwordLength       = optional(number, 32)
-    overridesSpecialChar = optional(string, "!#$%&*()-_=+[]{}<>:?")
-  }))
-  description = "Secrets to be generated"
-  default     = {}
-}
-
-variable "clustername" {
-  type        = string
-  description = "Name of Kubernetes Cluster"
-}
-
-variable "common_tags" {
-  type = map(any)
-  default = {}
 }

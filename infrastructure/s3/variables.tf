@@ -1,7 +1,7 @@
 variable "bucket_name" {
   description = "The name of the S3 bucket"
   type        = string
-  
+
 }
 
 
@@ -28,7 +28,7 @@ variable "bucket_ownership" {
   description = "Whether to control ownership of objects in the bucket"
   type        = string
   default     = "ObjectWriter"
-  
+
 }
 
 
@@ -36,7 +36,7 @@ variable "enable_versioning" {
   description = "Whether to enable bucket versioning"
   type        = bool
   default     = true
-  
+
 }
 
 

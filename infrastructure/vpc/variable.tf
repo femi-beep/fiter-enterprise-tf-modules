@@ -1,56 +1,44 @@
 variable "customer" {
-  description = "(Required) Name of Customer. ex: Fiter"
   type        = string
+  description = "(Required) Name of Customer. ex: Fiter"
 }
 
 variable "environment" {
-  description = "(Required) Environment e.g Dev, Stg, Prod"
   type        = string
+  description = "(Required) Environment e.g Dev, Stg, Prod"
 }
 
 variable "vpc_cidr" {
-  description = "(Required) VPC Cidr"
   type        = string
+  description = "(Required) VPC Cidr"
 }
 
 
 
 variable "common_tags" {
-  description = "(Required) Resource Tag"
   type        = map(any)
+  description = "(Required) Resource Tag"
 }
 
 variable "enable_nat_gateway" {
+  type        = bool
   description = "(Optional) Should be true if you want to provision NAT Gateways for each of your private networks"
   default     = true
-  type        = bool
 }
 
 variable "single_nat_gateway" {
+  type        = bool
   description = "(Optional) Should be true if you want to provision a single shared NAT Gateway across all of your private networks"
   default     = true
-  type        = bool
 }
 
 variable "enable_karpenter_autoscaler" {
+  type        = bool
   description = "Enabled Karpenter Autoscaler"
-  default = true
+  default     = true
 }
 
 variable "enable_secretmanager_vpc_endpoint" {
+  type        = bool
   description = "Enable SecretsManager VPC Endpoint if DB is in Private Subnet"
-  type        = bool
-}
-
-variable "enable_private_zone" {
-  description = "Enable Private Route53 Zone"
-  type        = bool
-  default     = false
-}
-
-variable "private_zone_host_name" {
-  description = "Private Route53 Zone Host Name"
-  type        = string
-  default     = "fineract.internal"
-  
 }

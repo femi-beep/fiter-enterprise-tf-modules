@@ -1,23 +1,21 @@
+/**
+ * # AWS VPC Terraform Module
+ *
+ * This module creates an AWS [VPC](https://aws.amazon.com/vpc/) along with associated networking components.
+ *
+ * Resources required to support the VPC, such as subnets, NAT gateways, and route tables, are created as part of the module. 
+ * Subnets are automatically allocated across Availability Zones (AZs) and tagged for specific roles like public, private, or intra subnets. 
+ * NAT Gateway configurations are included to allow secure internet access for private subnets.
+ *
+ * Additionally, VPC endpoints for services like Secrets Manager are deployed, with security groups managed as part of the module.
+ *
+ */
+
 data "aws_availability_zones" "available" {}
-
-locals {
-  name = "${var.customer}-${var.environment}-vpc"
-  azs  = slice(data.aws_availability_zones.available.names, 0, 3)
-
-  private_tag = {
-    "kubernetes.io/role/internal-elb" = 1
-  }
-
-  karpenter_tag = {
-    "karpenter.sh/discovery" = "${var.customer}-${var.environment}"
-    type                     = "private"
-  }
-  private_subnet_tags = var.enable_karpenter_autoscaler ? merge(local.private_tag, local.karpenter_tag) : local.private_tag
-}
 
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
-  version = "~> 4.0"
+  version = "~> 5.17.0"
 
   name = local.name
   cidr = var.vpc_cidr
@@ -65,15 +63,4 @@ module "endpoints" {
       tags                = { Name = "secretsmanager-vpc-endpoint" }
     },
   }
-}
-
-
-resource "aws_route53_zone" "private_zone" {
-  count = var.enable_private_zone ? 1 : 0
-  name = var.private_zone_host_name
-  vpc {
-    vpc_id = module.vpc.vpc_id
-  }
-  depends_on = [ module.vpc ]
-  tags = var.common_tags
 }
