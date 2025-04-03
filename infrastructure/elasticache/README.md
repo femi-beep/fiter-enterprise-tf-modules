@@ -1,13 +1,66 @@
-<!-- BEGIN_TF_DOCS -->
+<!-- DO NOT UPDATE: Document auto-generated! -->
+# AWS ElastiCache Terraform Module
+
+This module manages AWS ElastiCache clusters, including security groups, parameter groups, subnet groups, and CloudWatch alarms.
+
+It provisions ElastiCache replication groups for Redis, supporting advanced features like cluster mode, encryption, automatic failover, and custom configurations.
+Security groups are created to control ingress/egress rules, and subnet groups ensure proper network placement.
+The module also allows the creation or import of parameter groups for advanced Redis settings.
+
+CloudWatch alarms are configured to monitor key metrics like CPU utilization and freeable memory, with customizable thresholds and actions.
+
+Additionally, the module provides flexible configuration options, allowing seamless management of cluster lifecycles, logging, and dynamic resource scaling.
+
 ## Requirements
 
-No requirements.
+| Name | Version |
+|------|---------|
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.0 |
+| <a name="requirement_aws"></a> [aws](#requirement\_aws) | ~> 5.0 |
 
 ## Providers
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | n/a |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | ~> 5.0 |
+
+## Usage
+To use this module in your Terraform environment, include it in your Terraform configuration with the necessary parameters. Below is an example of how to use this module:
+
+```hcl
+module "vpc" {
+  source                            = "git::git@bitbucket.org:revvingadmin/terraform-modules.git//infrastructure//vpc?ref=1.2.0"
+  environment                       = "dev"
+  customer                          = "revving"
+  vpc_cidr                          = "10.0.0.0/16"
+  common_tags                       = { "name" = "example" }
+  enable_secretmanager_vpc_endpoint = false
+}
+
+module "redis_cache_pe" {
+  source = "../"
+
+  enabled                          = true
+  vpc_cidr_block                   = module.vpc.vpc_cidr_block
+  cache_identifier                 = "revving-eu-west-2-pe-dev"
+  availability_zones               = ["eu-west-2a", "eu-west-2b"]
+  vpc_id                           = module.vpc.vpc_id
+  create_security_group            = true
+  subnets                          = concat(module.vpc.private_subnets, module.vpc.public_subnets)
+  cluster_size                     = 2
+  instance_type                    = "cache.t4g.micro"
+  snapshot_retention_limit         = 30
+  apply_immediately                = false
+  multi_az_enabled                 = false
+  automatic_failover_enabled       = true
+  engine_version                   = "7.1"
+  family                           = "redis7"
+  at_rest_encryption_enabled       = false
+  transit_encryption_enabled       = false
+  cloudwatch_metric_alarms_enabled = false
+  security_group_description       = "Grant Access to Revving Cache"
+}
+```
 
 ## Modules
 
@@ -90,4 +143,4 @@ No modules.
 | <a name="output_id"></a> [id](#output\_id) | Redis cluster ID |
 | <a name="output_member_clusters"></a> [member\_clusters](#output\_member\_clusters) | Redis cluster members |
 | <a name="output_reader_endpoint_address"></a> [reader\_endpoint\_address](#output\_reader\_endpoint\_address) | The address of the endpoint for the reader node in the replication group, if the cluster mode is disabled. |
-<!-- END_TF_DOCS -->
+<!-- End of Document -->
