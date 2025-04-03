@@ -1,15 +1,15 @@
 variable "bucket_name" {
-  description = "The name of the S3 bucket. Must be globally unique."
   type        = string
+  description = "The name of the S3 bucket. Must be globally unique."
 }
 
 variable "table_name" {
-  description = "The name of the DynamoDB table. Must be unique in this AWS account."
   type        = string
+  description = "The name of the DynamoDB table. Must be unique in this AWS account."
 }
 
 variable "tf_backend_iam_principals" {
-  description = "AWS IAM principals identifiers"
   type        = list(string)
+  description = "AWS IAM principals identifiers"
   default     = []
 }
