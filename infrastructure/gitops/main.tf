@@ -1,22 +1,42 @@
+/*
+ * # AWS GitOps Terraform Module
+ *
+ * This module sets up ArgoCD on an EKS cluster using Helm.
+ *
+ * ## Features:
+ * - Creating Helm releases for ArgoCD and its applications.
+ * - Configuring Kubernetes secrets for clusters and repositories.
+ * - Generating SSH keys for repositories if needed.
+ * - Storing public SSH keys in AWS SSM Parameter Store.
+ * - Optionally configuring Slack notifications for ArgoCD.
+ *
+ *
+ * ## Resources:
+ * - Helm Releases.
+*/
+
 data "aws_caller_identity" "current" {}
 
 locals {
   setvalues = var.set_values_argocd_helm
 
-  local_project = [
+  dev_users = [
+    for key, user in var.argocd_users : key if user.role == "developer"
+  ]
+
+  admin_users = [
+    for key, user in var.argocd_users : key if user.role == "admin"
+  ]
+
+  main_project = [
     {
       project_name          = var.eks_cluster_name
       project_description   = "${var.eks_cluster_name} Deployment Project"
       destination_namespace = "*"
       destination_server    = "https://kubernetes.default.svc"
-    },
-    {
-      project_name          = "${var.eks_cluster_name}-workloads"
-      project_description   = "Argocd Deployment Project"
-      destination_namespace = "*"
-      destination_server    = "https://kubernetes.default.svc"
     }
   ]
+
   client_projects = [
     for key, cluster in var.argocd_clients : {
       project_name          = "${key}"
@@ -26,31 +46,35 @@ locals {
     }
   ]
 
-  projects = concat(local.local_project, local.client_projects)
+  projects = concat(local.main_project, var.projects, local.client_projects)
 
   eks_helm_map = {
     argocd_ingress_enabled      = var.argocd_ingress_enabled
-    argocd_role_arn             = var.argocd_role_arn
     argocd_domain               = var.argocd_domain
     enable_argocd_notifications = var.enable_argocd_notifications
     argocd_server_replicas      = var.argocd_server_replicas
     argocd_server_pdb_enabled   = var.argocd_server_pdb_enabled
     argocd_server_min_pdb       = var.argocd_server_min_pdb
     projects                    = local.projects
+    developer_projects          = var.projects
+    enable_ui_exec              = var.enable_ui_exec
+    devusers                    = local.dev_users
+    admin_users                 = local.admin_users
   }
 }
 
 resource "helm_release" "argocd" {
-  name       = "argo-cd"
-  repository = "https://argoproj.github.io/argo-helm"
-  version    = var.argocd_version
-  chart      = "argo-cd"
-  namespace  = var.k8s_namespace
+  name             = "argo-cd"
+  repository       = "https://argoproj.github.io/argo-helm"
+  version          = var.argocd_version
+  chart            = "argo-cd"
+  namespace        = var.k8s_namespace
+  create_namespace = true
+
   values = [
     templatefile("${path.module}/files/base-config.yaml", local.eks_helm_map)
   ]
 
-  create_namespace = true
   dynamic "set" {
     for_each = { for set in local.setvalues : set.name => set }
     content {
@@ -61,19 +85,20 @@ resource "helm_release" "argocd" {
 }
 
 resource "helm_release" "argoapps" {
-  name       = "argocd-apps"
-  repository = "https://argoproj.github.io/argo-helm"
-  version    = var.argoapps_version
-  chart      = "argocd-apps"
-  namespace  = var.k8s_namespace
+  name             = "argocd-apps"
+  repository       = "https://argoproj.github.io/argo-helm"
+  version          = var.argoapps_version
+  chart            = "argocd-apps"
+  namespace        = var.k8s_namespace
+  create_namespace = true
+
   values = [
     templatefile("${path.module}/files/argocd-apps.yaml.tmpl", {
       applications = var.argocd_root_applications
       projects     = local.projects
     })
   ]
-  create_namespace = true
-  depends_on       = [helm_release.argocd]
+  depends_on = [helm_release.argocd]
 }
 
 # ------------------------------------------------------------------------------------------------
@@ -82,16 +107,18 @@ resource "helm_release" "argoapps" {
 
 resource "kubernetes_secret_v1" "default_cluster" {
   metadata {
-    name      = "${var.eks_cluster_name}-cluster-secret"
-    namespace = var.k8s_namespace
+    name        = "${var.eks_cluster_name}-cluster-secret"
+    namespace   = var.k8s_namespace
+    annotations = var.cluster_annotations
+
     labels = merge(var.cluster_labels, {
       "argocd.argoproj.io/secret-type" = "cluster"
       clustername                      = var.eks_cluster_name
       environment                      = var.environment
       region                           = var.aws_region
     })
-    annotations = var.cluster_annotations
   }
+
   data = {
     name   = var.eks_cluster_name
     server = "https://kubernetes.default.svc"
@@ -104,12 +131,12 @@ resource "kubernetes_secret_v1" "default_cluster" {
     EOF
   }
 
-
   depends_on = [helm_release.argocd]
 }
 
 resource "kubernetes_secret_v1" "argocd_clients" {
   for_each = var.argocd_clients
+
   metadata {
     name      = "${each.key}-cluster-secret"
     namespace = var.k8s_namespace
@@ -117,6 +144,7 @@ resource "kubernetes_secret_v1" "argocd_clients" {
       "argocd.argoproj.io/secret-type" = "cluster"
     }
   }
+
   data = {
     name   = each.key
     server = each.value.server
@@ -128,6 +156,7 @@ resource "kubernetes_secret_v1" "argocd_clients" {
 
 resource "kubernetes_secret_v1" "argocd_repositories" {
   for_each = var.argocd_repos
+
   metadata {
     name      = each.key
     namespace = var.k8s_namespace
@@ -135,6 +164,7 @@ resource "kubernetes_secret_v1" "argocd_repositories" {
       "argocd.argoproj.io/secret-type" = "repository"
     }
   }
+
   data = each.value.type == "ssh" ? {
     type          = "git"
     sshPrivateKey = each.value.generate_ssh ? tls_private_key.argocdsshkey[each.key].private_key_openssh : each.value.ssh_key
@@ -145,11 +175,13 @@ resource "kubernetes_secret_v1" "argocd_repositories" {
     url      = each.value.url
     password = each.value.password
   }
+
   depends_on = [helm_release.argocd]
 }
 
 resource "kubernetes_secret" "argo_notification_secret" {
   count = var.enable_argocd_notifications ? 1 : 0
+
   metadata {
     name      = "argocd-notifications-secret"
     namespace = var.k8s_namespace
@@ -162,13 +194,15 @@ resource "kubernetes_secret" "argo_notification_secret" {
 
 # ED25519 key
 resource "tls_private_key" "argocdsshkey" {
-  for_each  = { for key, value in var.argocd_repos : key => value if value.generate_ssh }
+  for_each = { for key, value in var.argocd_repos : key => value if value.generate_ssh }
+
   algorithm = "ED25519"
 }
 
 resource "aws_ssm_parameter" "argocd_public_key" {
   for_each = { for key, value in var.argocd_repos : key => value if value.generate_ssh }
-  name     = "/argocd/git/argocd-user/${var.eks_cluster_name}/${each.key}/github_public_sshkey"
-  type     = "SecureString"
-  value    = tls_private_key.argocdsshkey[each.key].public_key_openssh
+
+  name  = "/argocd/git/argocd-user/${var.eks_cluster_name}/${each.key}/github_public_sshkey"
+  type  = "SecureString"
+  value = tls_private_key.argocdsshkey[each.key].public_key_openssh
 }

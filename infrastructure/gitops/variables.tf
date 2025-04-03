@@ -10,7 +10,6 @@ variable "aws_region" {
 }
 
 variable "argocd_repos" {
-  description = "List of Repository containing githuburl, name and type"
   type = map(object({
     type         = string
     ssh_key      = optional(string, "")
@@ -19,7 +18,10 @@ variable "argocd_repos" {
     username     = optional(string, "")
     password     = optional(string, "")
   }))
-  default = {}
+
+  description = "List of Repository containing githuburl, name and type"
+  default     = {}
+
   validation {
     condition = alltrue([
       for key, value in var.argocd_repos : contains(["git", "ssh"], value.type)
@@ -52,6 +54,9 @@ variable "argocd_enabled" {
   type        = bool
 }
 
+// deprecated. removed in next release
+// argocd no longer needs to shared by multiple clusters
+// also to enforce least privilege
 variable "argocd_role_arn" {
   description = "Argocd Service Account Role Arn"
   type        = string
@@ -165,4 +170,29 @@ variable "environment" {
   type        = string
   description = "Environment Prod, Development or staging"
   default     = "dev"
+}
+
+variable "projects" {
+  type = list(object({
+    project_name          = string
+    project_description   = string
+    destination_namespace = optional(string, "*")
+    destination_server    = optional(string, "https://kubernetes.default.svc")
+  }))
+  description = "List of Projects to Deploy"
+  default     = []
+}
+
+variable "enable_ui_exec" {
+  type        = bool
+  description = "Enable Exec through argocd UI"
+  default     = false
+}
+
+variable "argocd_users" {
+  type = map(object({
+    role = string
+  }))
+  description = "List of Users to add to Argocd"
+  default     = {}
 }
