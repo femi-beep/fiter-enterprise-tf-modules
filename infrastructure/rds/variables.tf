@@ -11,7 +11,8 @@ variable "major_engine_version" {
 
 variable "username" {
   description = "Username for the root account of db"
-  sensitive   = true
+  type        = string
+  default     = null
 }
 
 variable "engine_version" {
@@ -23,6 +24,7 @@ variable "engine_version" {
 variable "initial_db_name" {
   description = "Name of the db created initially"
   type        = string
+  default     = null
 }
 
 variable "db_storage_size" {
@@ -139,6 +141,8 @@ variable "db_service_users" {
     access_type = string
     databases   = list(string)
   }))
+  default = []
+
   validation {
     condition = alltrue([
       for o in var.db_service_users : contains(["readonly", "readwrite"], o.access_type)
@@ -222,20 +226,68 @@ variable "performance_insights_retention_period" {
   type        = number
 }
 
-variable "enable_read_replicas" {
+variable "apply_immediately" {
+  description = "Specifies whether any database modifications are applied immediately, or during the next maintenance window"
+  type        = bool
+  default     = false
+}
+
+variable "read_replica" {
   default     = false
   description = "Enable Read Replicas for Database"
   type        = bool
 }
 
-variable "read_replicas" {
-  description = "List of Read Replicas to create"
-  type        = list(string)
-  default     = []
+variable "cron_schedules" {
+  description = "List of cron schedules to create"
+  type = list(object({
+    name                = string
+    schedule_expression = string
+    action              = string
+    description         = string
+  }))
+
+  validation {
+    condition = alltrue([
+      for schedule in var.cron_schedules : contains(["start", "stop"], schedule.action)
+    ])
+    error_message = "Action can only be 'start' or 'stop'."
+  }
+  default = []
 }
 
-variable "apply_immediately" {
-  description = "Specifies whether any database modifications are applied immediately, or during the next maintenance window"
+variable "replicate_source_db" {
+  description = "Specifies that this resource is a Replicate database, and to use this value as the source database. This correlates to the identifier of another Amazon RDS Database to replicate"
+  type        = string
+  default     = null
+}
+
+variable "scheduler_timezone" {
+  description = "Timezone for the scheduler"
+  type        = string
+  default     = "Europe/London"
+}
+
+variable "region" {
+  description = "Region to deploy the resources"
+  type        = string
+  default     = "eu-west-2"
+}
+
+variable "environment" {
+  description = "Environment to deploy the resources"
+  type        = string
+  default     = null
+}
+
+variable "snapshot_name" {
+  type        = string
+  description = "Name of DB to be snapshot"
+  default     = null
+}
+
+variable "enable_credential_manager" {
   type        = bool
-  default     = false
+  description = "Enable Credential Manager"
+  default     = true
 }
