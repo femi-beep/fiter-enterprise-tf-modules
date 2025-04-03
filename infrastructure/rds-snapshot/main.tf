@@ -61,11 +61,11 @@ module "db" {
   allocated_storage           = var.db_storage_size
   allow_major_version_upgrade = false
 
-  db_name                                = var.initial_db_name
-  username                               = var.username
-  port                                   = local.db_port
-  enabled_cloudwatch_logs_exports        = var.cloudwatch_logs_names
-  vpc_security_group_ids                 = [aws_security_group.service.id]
+  db_name                         = var.initial_db_name
+  username                        = var.username
+  port                            = local.db_port
+  enabled_cloudwatch_logs_exports = var.cloudwatch_logs_names
+  vpc_security_group_ids          = [aws_security_group.service.id]
 
   backup_retention_period = var.backup_retention_period
   maintenance_window      = var.maintenance_window

@@ -10,7 +10,7 @@
  * Additionally, VPC endpoints for services like Secrets Manager are deployed, with security groups managed as part of the module.
  *
  */
- 
+
 data "aws_availability_zones" "available" {}
 
 module "vpc" {

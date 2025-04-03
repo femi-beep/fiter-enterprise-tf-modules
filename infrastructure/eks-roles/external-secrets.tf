@@ -11,7 +11,7 @@ resource "aws_iam_policy" "external_secret" {
 }
 
 data "aws_iam_policy_document" "external_secret" {
-  count       = var.eks_external_secret_enabled ? 1 : 0
+  count = var.eks_external_secret_enabled ? 1 : 0
   statement {
     sid    = "SSMParameterReadOnly"
     effect = "Allow"

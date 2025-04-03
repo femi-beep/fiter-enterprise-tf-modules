@@ -33,9 +33,9 @@ variable "single_nat_gateway" {
 }
 
 variable "enable_karpenter_autoscaler" {
-  type = bool
+  type        = bool
   description = "Enabled Karpenter Autoscaler"
-  default = true
+  default     = true
 }
 
 variable "enable_secretmanager_vpc_endpoint" {

@@ -20,9 +20,9 @@ module "develop" {
   initial_db_name             = null
   manage_master_user_password = false
   db_port                     = 5432
-  encrypyt_db_storage      = true
-  rds_db_delete_protection = false
-  apply_immediately        = false
+  encrypyt_db_storage         = true
+  rds_db_delete_protection    = false
+  apply_immediately           = false
 
   allowed_cidrs = [
     {
@@ -31,5 +31,5 @@ module "develop" {
       "description" : "Grant Access"
     }
   ]
-  depends_on               = [module.vpc]
+  depends_on = [module.vpc]
 }

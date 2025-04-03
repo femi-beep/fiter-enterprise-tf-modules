@@ -5,5 +5,5 @@ locals {
     Name    = var.db_identifier
     OwnedBy = "Terraform"
   }
-  security_group_map = { for key in var.allowed_cidrs: key.name => key}
+  security_group_map = { for key in var.allowed_cidrs : key.name => key }
 }

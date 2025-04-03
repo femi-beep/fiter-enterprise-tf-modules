@@ -23,7 +23,7 @@ module "argocd" {
       generate_ssh = false
     }
   }
-  
+
   argocd_root_applications = [
     {
       app_name       = "bootstrap-addons"

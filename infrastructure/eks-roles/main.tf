@@ -26,6 +26,6 @@ module "eks_iam_role" {
   role_name                     = each.value.role_name
   provider_url                  = replace(var.cluster_oidc_issuer_url, "https://", "")
   role_policy_arns              = each.value.role_policy_arn
-  oidc_fully_qualified_subjects = strcontains(each.value.serviceaccount_name, "*") ? []: ["system:serviceaccount:${each.value.namespace}:${each.value.serviceaccount_name}"]
-  oidc_subjects_with_wildcards  = strcontains(each.value.serviceaccount_name, "*") ? ["system:serviceaccount:${each.value.namespace}:${each.value.serviceaccount_name}"]: []
+  oidc_fully_qualified_subjects = strcontains(each.value.serviceaccount_name, "*") ? [] : ["system:serviceaccount:${each.value.namespace}:${each.value.serviceaccount_name}"]
+  oidc_subjects_with_wildcards  = strcontains(each.value.serviceaccount_name, "*") ? ["system:serviceaccount:${each.value.namespace}:${each.value.serviceaccount_name}"] : []
 }

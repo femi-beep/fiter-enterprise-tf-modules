@@ -18,7 +18,7 @@ locals {
       role_name           = "${var.eks_cluster_name}-autoscaler"
       namespace           = var.ca_k8s_namespace
       serviceaccount_name = var.ca_sa_name
-      role_policy_arn     = try([aws_iam_policy.cluster_autoscaler[0].arn],[])
+      role_policy_arn     = try([aws_iam_policy.cluster_autoscaler[0].arn], [])
       enabled             = var.enable_cluster_autoscaler
     },
     external_dns = {
