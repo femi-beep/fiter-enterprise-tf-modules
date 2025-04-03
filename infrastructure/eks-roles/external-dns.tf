@@ -2,12 +2,14 @@
 # IAM Assumable roles for DNS service
 # ------------------------------------------------------------------------------
 resource "aws_iam_policy" "external_dns" {
+  count       = var.enable_external_dns ? 1 : 0
   name_prefix = "${var.eks_cluster_name}-extDNS"
   description = "EKS external-dns policy for cluster ${var.eks_cluster_name}"
-  policy      = data.aws_iam_policy_document.external_dns.json
+  policy      = data.aws_iam_policy_document.external_dns[0].json
 }
 
 data "aws_iam_policy_document" "external_dns" {
+  count = var.enable_external_dns ? 1 : 0
   statement {
     sid    = "ExternalDNSChange"
     effect = "Allow"
@@ -16,7 +18,7 @@ data "aws_iam_policy_document" "external_dns" {
       "route53:ChangeResourceRecordSets",
     ]
 
-    resources = ["arn:aws:route53:::hostedzone/*"]
+    resources = [for zone in var.hosted_zones : "arn:aws:route53:::hostedzone/${zone}"]
   }
 
   statement {
@@ -31,5 +33,3 @@ data "aws_iam_policy_document" "external_dns" {
     resources = ["*"]
   }
 }
-
-# to do restrict to specific dns names
