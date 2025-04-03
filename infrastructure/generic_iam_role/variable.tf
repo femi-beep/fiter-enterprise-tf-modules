@@ -1,20 +1,51 @@
-variable "policy_file" {
-  description = "Name of Policy File to Find IAM Role. Found in the current Working Directory"
-  type        = string
-}
-
 variable "role_name" {
+  type        = string
   description = "Name of Role Name"
-  type        = string
 }
-variable "customer" {
-  description = "Name of Customer"
+
+variable "description" {
   type        = string
+  description = "Description of the IAM Role"
+  default     = "IAM Role Managed by Terraform"
 }
-variable "environment" {}
 
-variable "common_tags" {}
+variable "common_tags" {
+  type        = map(any)
+  description = "Common Tags to be applied to the IAM Role"
+}
 
-variable "assume_role_arn" {
-  description = "ARN of Role or User which can Assume this role"
+variable "principal_type" {
+  type        = string
+  description = "Type of Principal"
+  default     = "AWS"
+}
+
+variable "principal_identifiers" {
+  type        = list(string)
+  description = "List of Principal Identifiers"
+  default     = []
+}
+
+variable "create_policy" {
+  type        = bool
+  description = "Create a Policy for the Role"
+  default     = null
+}
+
+variable "role_policy" {
+  type        = string
+  default     = null
+  description = "The IAM policy to attach to the role"
+}
+
+variable "policy_arns" {
+  type        = set(string)
+  default     = []
+  description = "A set of policy ARNs to attach to the user"
+}
+
+variable "assume_policy" {
+  type        = string
+  default     = null
+  description = "Assume Policy for the Role"
 }
