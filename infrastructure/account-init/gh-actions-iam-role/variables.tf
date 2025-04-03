@@ -1,13 +1,7 @@
 variable "deployment_role_name" {
-  description = "The name of the Terraform IAM deployment role"
   type        = string
+  description = "The name of the Terraform IAM deployment role"
 }
-
-variable "github_openidconnect_arn" {}
-
-variable "bucket_name" {}
-
-variable "table_name" {}
 
 variable "ci_pipelines_roles" {
   type        = map(any)

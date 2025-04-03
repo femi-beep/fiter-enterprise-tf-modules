@@ -1,3 +1,17 @@
+/*
+ * # AWS GITHUB ACTION IAM Terraform Module
+ *
+ * This module creates and manages AWS [IAM Roles and Policies](https://aws.amazon.com/iam/) for deployments and CI/CD pipelines.
+ *
+ * Resources such as IAM Roles, Policies, and Role-Policy Attachments are created as part of this module. The module supports custom trust and permission policies for CI/CD pipelines and deployment-specific roles.
+ *
+ * ## Features
+ *
+ * - **Deployment Role**: Creates an IAM role for deployments with a customizable trust relationship and associated policies.
+ * - **CI/CD Pipeline Roles**: Creates IAM roles and policies for CI/CD pipelines, supporting GitHub Actions.
+ * - **Policy Management**: Supports the attachment of custom policies to roles.
+ **/
+
 data "aws_caller_identity" "current" {}
 
 resource "aws_iam_role" "terraform_role" {
@@ -67,7 +81,8 @@ resource "aws_iam_policy" "terraform_policy" {
           "kms:*",
           "sts:GetServiceBearerToken",
           "secretsmanager:*",
-          "elasticache:*"
+          "elasticache:*",
+          "scheduler:*"
         ]
         Effect   = "Allow"
         Resource = "*"
