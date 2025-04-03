@@ -138,11 +138,12 @@ resource "kubernetes_secret_v1" "argocd_clients" {
   for_each = var.argocd_clients
 
   metadata {
-    name      = "${each.key}-cluster-secret"
-    namespace = var.k8s_namespace
-    labels = {
+    name        = "${each.key}-cluster-secret"
+    namespace   = var.k8s_namespace
+    annotations = each.value.cluster_annotations
+    labels = merge(each.value.cluster_labels, {
       "argocd.argoproj.io/secret-type" = "cluster"
-    }
+    })
   }
 
   data = {

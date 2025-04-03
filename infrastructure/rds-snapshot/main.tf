@@ -76,7 +76,7 @@ module "db" {
   monitoring_interval         = var.monitoring_interval
   monitoring_role_name        = "${var.db_identifier}RDSMonitoringRole"
   create_monitoring_role      = var.create_monitoring_role
-  storage_encrypted           = var.encrypyt_db_storage
+  storage_encrypted           = var.encrypt_db_storage
   storage_type                = var.storage_type
   iops                        = var.iops
   ca_cert_identifier          = var.ca_cert_identifier

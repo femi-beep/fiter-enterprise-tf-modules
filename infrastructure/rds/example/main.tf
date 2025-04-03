@@ -22,7 +22,7 @@ module "rds" {
   db_storage_size                        = 100                                    # Storage size in GB
   cloudwatch_log_group_retention_in_days = 14                                     # Retention period for CloudWatch logs
   create_cloudwatch_log_group            = true                                   # Whether to create CloudWatch log group
-  encrypyt_db_storage                    = true                                   # Encrypt DB storage
+  encrypt_db_storage                     = true                                   # Encrypt DB storage
 }
 
 # RDS From Snapshot

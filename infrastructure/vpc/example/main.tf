@@ -6,7 +6,7 @@ module "vpc" {
   enable_secretmanager_vpc_endpoint = false              # Hardcoded value to disable RDS public access
   common_tags = {
     Name        = "example-vpc"
-    Environment = "production"
+    Environment = "development"
     Owner       = "exampleteam"
   } # Hardcoded common tags
 }

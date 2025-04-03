@@ -82,7 +82,7 @@ module "db" {
   create_monitoring_role      = var.create_monitoring_role
   storage_type                = var.storage_type
   iops                        = var.iops
-  storage_encrypted           = var.encrypyt_db_storage
+  storage_encrypted           = var.encrypt_db_storage
   ca_cert_identifier          = var.ca_cert_identifier
   replicate_source_db         = var.replicate_source_db
 

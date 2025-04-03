@@ -19,12 +19,6 @@ module "eks" {
   node_security_group_additional_rules = [
     {
       protocol    = "tcp"
-      from_port   = 22
-      to_port     = 22
-      cidr_blocks = ["0.0.0.0/0"] # Allow SSH from anywhere (use cautiously!)
-    },
-    {
-      protocol    = "tcp"
       from_port   = 80
       to_port     = 80
       cidr_blocks = ["0.0.0.0/0"] # Allow HTTP traffic from anywhere

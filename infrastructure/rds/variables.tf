@@ -190,7 +190,7 @@ variable "db_port" {
   default     = 3306
 }
 
-variable "encrypyt_db_storage" {
+variable "encrypt_db_storage" {
   description = "Enable Storage Encryption"
   type        = bool
   default     = true
