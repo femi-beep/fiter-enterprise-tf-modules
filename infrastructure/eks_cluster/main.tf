@@ -161,17 +161,6 @@ module "eks" {
   })
 }
 
-module "eks_auth" {
-  source  = "terraform-aws-modules/eks/aws//modules/aws-auth"
-  version = "~> 20.0"
-
-  manage_aws_auth_configmap = true
-
-  aws_auth_roles = local.eks_auth_roles
-
-  aws_auth_users = local.eks_auth_users
-}
-
 # add support for fully private clusters
 module "endpoints" {
   count                 = var.cluster_endpoint_public_access ? 0 : 1
@@ -295,16 +284,14 @@ module "karpenter" {
   source  = "terraform-aws-modules/eks/aws//modules/karpenter"
   version = "20.29.0"
 
-  cluster_name            = module.eks.cluster_name
-  irsa_oidc_provider_arn  = module.eks.oidc_provider_arn
-  enable_v1_permissions   = true
-  enable_irsa             = true
-  create_instance_profile = true
-  create_access_entry     = false
-  node_iam_role_additional_policies = merge({
-    AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-  }, var.additional_cluster_policies)
-  tags = var.common_tags
+  cluster_name           = module.eks.cluster_name
+  irsa_oidc_provider_arn = module.eks.oidc_provider_arn
+  create_node_iam_role   = false
+  enable_v1_permissions  = true
+  enable_irsa            = true
+  create_access_entry    = false
+  node_iam_role_arn      = element(local.node_group_arns, 0)
+  tags                   = var.common_tags
 }
 
 # POST EKS INSTALL

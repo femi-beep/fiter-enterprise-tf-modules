@@ -40,12 +40,12 @@ variable "subnets" {
 
 variable "aws_auth_users" {
   type        = list(any)
-  description = "List of User maps to add to the aws-auth configmap"
+  description = "(Deprecated) List of User maps to add to the aws-auth configmap"
 }
 
 variable "aws_auth_roles" {
   type        = list(any)
-  description = "List of role maps to add to the aws-auth configmap"
+  description = "(Deprecated) List of role maps to add to the aws-auth configmap"
   default     = []
 }
 

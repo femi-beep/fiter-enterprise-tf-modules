@@ -26,12 +26,6 @@ locals {
 
   endpoints = merge(local.interface_endpoints, local.gateway_endpoint)
 
-  kube_deploy_user = var.helm_deploy ? [{
-    rolearn  = "arn:aws:iam::${local.account_id}:role/${local.cluster_name}-ghdeploy-role-kube-deploy"
-    username = "helm-ci-deployer"
-    groups   = ["ci-user"]
-  }] : []
-
   node_security_group_rules = {
     ingress_self_all = {
       description = "Node to node all ports/protocols"
@@ -63,39 +57,4 @@ locals {
   node_group_arns = [
     for key, node in module.eks.eks_managed_node_groups : node.iam_role_arn
   ]
-
-  node_roles_arns = flatten([
-    module.karpenter.node_iam_role_arn,
-    local.node_group_arns
-  ])
-
-  node_roles = [
-    for roles in local.node_roles_arns : {
-      rolearn  = roles
-      username = "system:node:{{EC2PrivateDNSName}}"
-      groups = [
-        "system:bootstrappers",
-        "system:nodes",
-      ]
-    }
-  ]
-
-  auth_roles = [
-    for role in var.aws_auth_roles : {
-      rolearn  = role
-      username = role
-      groups   = ["system:masters"]
-    }
-  ]
-
-  eks_auth_users = [
-    for user in var.aws_auth_users :
-    {
-      userarn  = format("arn:aws:iam::%s:user/%s", local.account_id, user)
-      username = user
-      groups   = ["system:masters"]
-    }
-  ]
-
-  eks_auth_roles = concat(local.auth_roles, local.node_roles, local.kube_deploy_user)
 }
