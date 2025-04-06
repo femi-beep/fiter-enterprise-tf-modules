@@ -120,7 +120,7 @@ module "eks" {
   }
 
   create_iam_role                          = true
-  enable_cluster_creator_admin_permissions = false
+  enable_cluster_creator_admin_permissions = true
   access_entries                           = var.eks_access_entries
   authentication_mode                      = var.authentication_mode
   eks_managed_node_groups = {
