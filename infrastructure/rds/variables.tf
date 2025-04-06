@@ -291,3 +291,9 @@ variable "enable_credential_manager" {
   description = "Enable Credential Manager"
   default     = true
 }
+
+variable "enable_multi_az" {
+  type        = bool
+  description = "Enable Multi-AZ Cluster"
+  default     = false
+}
