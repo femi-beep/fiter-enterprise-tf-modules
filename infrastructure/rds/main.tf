@@ -85,6 +85,7 @@ module "db" {
   storage_encrypted           = var.encrypt_db_storage
   ca_cert_identifier          = var.ca_cert_identifier
   replicate_source_db         = var.replicate_source_db
+  multi_az                    = var.enable_multi_az
 
   performance_insights_enabled          = var.performance_insights_enabled
   performance_insights_retention_period = var.performance_insights_retention_period
