@@ -3,7 +3,7 @@ locals {
     mysql    = "pymysql.zip"
     postgres = "psycopg2.zip"
   }
-  secret_path               = "${var.environment}/${var.database_identifier}"
+  secret_path = "${var.environment}/${var.database_identifier}"
 }
 
 data "aws_caller_identity" "current" {}
@@ -77,8 +77,9 @@ data "aws_iam_policy_document" "credential_manager_lambda" {
 }
 
 module "pymysql_layer" {
-  source                 = "terraform-aws-modules/lambda/aws"
-  version                = "6.0.0"
+  source  = "terraform-aws-modules/lambda/aws"
+  version = "6.0.0"
+
   create                 = var.enable_credential_manager
   create_layer           = var.enable_credential_manager
   layer_name             = "${var.name}-pysql-layer"
@@ -90,8 +91,10 @@ module "pymysql_layer" {
 
 # Invoke for DB Initialization
 resource "aws_lambda_invocation" "postgres_init" {
-  count         = var.engine == "postgres" && var.enable_credential_manager ? 1 : 0
-  function_name = module.credential_manager.lambda_function_arn
+  count = var.engine == "postgres" && var.enable_credential_manager ? 1 : 0
+
+  function_name   = module.credential_manager.lambda_function_arn
+  lifecycle_scope = "CREATE_ONLY"
   input = jsonencode({
     "USERNAME"    = "ignore",
     "DATABASES"   = [],
@@ -99,7 +102,6 @@ resource "aws_lambda_invocation" "postgres_init" {
     "ACCESS_TYPE" = "readonly"
   })
 
-  lifecycle_scope = "CREATE_ONLY"
   depends_on = [
     module.pymysql_layer,
     module.credential_manager
@@ -110,7 +112,8 @@ resource "aws_lambda_invocation" "postgres_init" {
 resource "aws_lambda_invocation" "db_service" {
   for_each = var.enable_credential_manager ? { for value in var.db_service_users : value.user => value } : {}
 
-  function_name = module.credential_manager.lambda_function_arn
+  function_name   = module.credential_manager.lambda_function_arn
+  lifecycle_scope = "CRUD"
 
   input = jsonencode({
     "USERNAME"    = each.value.user,
@@ -119,7 +122,6 @@ resource "aws_lambda_invocation" "db_service" {
     "ACCESS_TYPE" = each.value.access_type
   })
 
-  lifecycle_scope = "CRUD"
   depends_on = [
     module.pymysql_layer,
     module.credential_manager

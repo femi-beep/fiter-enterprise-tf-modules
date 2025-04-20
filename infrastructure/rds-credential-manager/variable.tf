@@ -1,7 +1,7 @@
 variable "enable_credential_manager" {
+  type        = bool
   default     = true
   description = "Enable Credential Manager"
-  type        = bool
 }
 
 variable "name" {
@@ -10,6 +10,7 @@ variable "name" {
 }
 
 variable "engine" {
+  type        = string
   description = "The database engine to use"
   default     = "postgres"
   validation {
@@ -19,8 +20,8 @@ variable "engine" {
 }
 
 variable "subnets" {
-  description = "List of subnets to use for the RDS cluster"
   type        = list(string)
+  description = "List of subnets to use for the RDS cluster"
 }
 
 variable "security_group_ids" {
@@ -29,7 +30,7 @@ variable "security_group_ids" {
 }
 
 variable "admin_secret_arn" {
-  # type        = string
+  type        = string
   description = "ARN of the admin secret in AWS Secrets Manager"
 }
 
@@ -39,23 +40,57 @@ variable "database_host" {
 }
 
 variable "database_admin_db" {
-
+  type        = string
+  description = "Admin database name"
 }
 
 variable "database_identifier" {
-
+  type        = string
+  description = "Identifier for the database"
 }
 
 variable "tags" {
-  default = {}
+  type        = map(any)
+  description = "Tags to apply to the resources"
+  default     = {}
 }
 
 variable "region" {
-
+  type        = string
+  description = "AWS region"
 }
 
 variable "db_service_users" {
+  type = list(object({
+    user        = string
+    access_type = string
+    databases   = list(string)
+  }))
+  description = "service user to create for application"
+  default     = []
 
+  validation {
+    condition = alltrue([
+      for o in var.db_service_users : contains(["readonly", "readwrite"], o.access_type)
+    ])
+    error_message = "Access_Type can only contains readonly or readwrite. Kindly check your service Users"
+  }
+
+  validation {
+    condition = alltrue([
+      for o in var.db_service_users : can(regex("^[0-9A-Za-z_]+$", o.user))
+    ])
+    error_message = "Username should only contain numbers, letters and underscores. Only Alphanumeric values are allowed"
+  }
+
+  validation {
+    condition = alltrue(flatten([
+      for o in var.db_service_users : [
+        for db_name in o.databases : can(regex("^[0-9A-Za-z_]+$", db_name))
+      ]
+    ]))
+    error_message = "DB Names should only contain numbers, letters and underscores. Only Alphanumeric values are allowed"
+  }
 }
 
 variable "environment" {
