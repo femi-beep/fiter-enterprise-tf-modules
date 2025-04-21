@@ -74,14 +74,14 @@ variable "instance_class" {
 
 variable "storage_type" {
   description = "Storage Type"
-  default     = "io1"
+  default     = "gp3"
   type        = string
 }
 
 variable "iops" {
   type        = number
   description = "IOPS to Provision"
-  default     = 3000
+  default     = null
 }
 
 variable "ca_cert_identifier" {
