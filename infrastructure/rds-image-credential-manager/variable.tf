@@ -101,6 +101,11 @@ variable "environment" {
 variable "docker_image" {
   type        = string
   description = "Docker image to use for the Lambda function"
-  default     = null
-  
+  default     = null 
+}
+
+variable "timeout" {
+  type        = number
+  description = "Timeout for the Lambda function"
+  default     = 120
 }

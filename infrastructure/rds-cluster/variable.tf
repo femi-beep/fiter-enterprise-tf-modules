@@ -8,6 +8,7 @@ variable "db_identifier" {
 }
 
 variable "engine" {
+  type        = string
   description = "The database engine to use"
   default     = "postgres"
   validation {
@@ -17,20 +18,20 @@ variable "engine" {
 }
 
 variable "engine_version" {
+  type        = string
   description = "Major engine verison of rds"
   default     = "16"
-  type        = string
 }
 
 variable "username" {
-  description = "Username for the root account of db"
   type        = string
+  description = "Username for the root account of db"
   default     = "postgres"
 }
 
 variable "initial_db_name" {
-  description = "Name of the db created initially"
   type        = string
+  description = "Name of the db created initially"
   default     = null
 }
 
@@ -40,42 +41,43 @@ variable "vpc_id" {
 }
 
 variable "monitoring_interval" {
-  description = "Interval of monitoring"
   type        = number
+  description = "Interval of monitoring"
   default     = 0
 }
 
 variable "create_monitoring_role" {
+  type        = bool
   description = "Flag to create monitoring role"
   default     = false
-  type        = bool
 }
 
 variable "rds_family" {
+  type        = string
   description = "RDS family like mysql, aurora with version"
   default     = "postgres16"
 }
 
 variable "vpc_availability_zones" {
-  description = "List of availability zones in the VPC"
   type        = list(string)
+  description = "List of availability zones in the VPC"
 }
 
 variable "db_storage_size" {
+  type        = number
   description = "Size of RDS storage in GB"
   default     = 100
-  type        = number
 }
 
 variable "instance_class" {
-  description = "Instance type for the cluster eg. db.t2.large"
   type        = string
+  description = "Instance type for the cluster eg. db.t2.large"
 }
 
 variable "storage_type" {
+  type        = string
   description = "Storage Type"
   default     = "gp3"
-  type        = string
 }
 
 variable "iops" {
@@ -85,9 +87,9 @@ variable "iops" {
 }
 
 variable "ca_cert_identifier" {
+  type        = string
   default     = "rds-ca-rsa2048-g1"
   description = "See Certificate Authority on RDS Page"
-  type        = string
 }
 
 variable "rds_db_delete_protection" {
@@ -97,34 +99,64 @@ variable "rds_db_delete_protection" {
 }
 
 variable "tags" {
-  description = "Tags to be applied to the resources"
   type        = map(string)
+  description = "Tags to be applied to the resources"
   default     = {}
 }
 
 variable "disable_rds_public_access" {
-  description = "Turn Off Public RDS Access"
   type        = bool
+  description = "Turn Off Public RDS Access"
   default     = false
 }
 
 variable "allowed_cidrs" {
-  description = "Allowed Cidrs in the Database"
   type = list(object({
     name        = string
     ip          = string
     description = string
     port        = optional(string, null)
   }))
-  default = []
+  description = "Allowed Cidrs in the Database"
+  default     = []
 }
 
 variable "subnets" {
-  description = "List of subnets to use for the RDS cluster"
   type        = list(string)
+  description = "List of subnets to use for the RDS cluster"
 }
 
 variable "security_group_rules" {
-  default = {}
+  description = "Security group rules to apply to the RDS cluster"
+  default     = {}
 }
 
+variable "cluster_instance_override" {
+  type        = map(any)
+  description = "Instance class for the cluster"
+  default     = {}
+}
+
+variable "port" {
+  type        = number
+  description = "Port for the database"
+  default     = 5432
+}
+
+variable "enabled_cloudwatch_logs_exports" {
+  type        = list(string)
+  description = "Enabled CloudWatch logs exports"
+  default     = ["postgresql"]
+}
+
+variable "apply_immediately" {
+  type        = bool
+  description = "Apply changes immediately"
+  default     = true
+}
+
+variable "skip_final_snapshot" {
+  type        = bool
+  description = "Skip final snapshot"
+  default     = true
+}

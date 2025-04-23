@@ -3,9 +3,17 @@ output "db_instance_address" {
   value       = module.db.db_instance_address
 }
 
-output "rds_secret" {
-  description = "RDS secret"
-  value = {
-    for key, secret in aws_lambda_invocation.db_service : key => lookup(jsondecode(secret.result), "secretname", "")
-  }
+output "rds_security_group" {
+  description = "value of the RDS security group"
+  value       = aws_security_group.service.id
+}
+
+output "db_instance_master_user_secret_arn" {
+  description = "ARN of the master user secret in AWS Secrets Manager"
+  value       = module.db.db_instance_master_user_secret_arn
+}
+
+output "db_identifier" {
+  description = "Identifier for the database"
+  value       = module.db.db_instance_identifier
 }

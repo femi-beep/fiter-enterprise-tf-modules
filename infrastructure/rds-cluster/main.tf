@@ -7,7 +7,7 @@ module "aurora" {
   version = "9.13.0"
 
   name                   = var.db_identifier
-  port                   = 5432
+  port                   = var.port
   engine                 = var.engine
   engine_version         = var.engine_version
   master_username        = var.username
@@ -18,11 +18,12 @@ module "aurora" {
   subnets                = var.subnets
   monitoring_interval    = var.monitoring_interval
   create_monitoring_role = var.create_monitoring_role
+  instances              = var.cluster_instance_override
 
   manage_master_user_password_rotation                   = false
   master_user_password_rotation_automatically_after_days = 30
 
-  enabled_cloudwatch_logs_exports = ["postgresql"]
+  enabled_cloudwatch_logs_exports = var.enabled_cloudwatch_logs_exports
 
   cluster_performance_insights_enabled = false
 
@@ -41,7 +42,8 @@ module "aurora" {
 
   cluster_ca_cert_identifier = var.ca_cert_identifier
 
-  skip_final_snapshot = true
+  skip_final_snapshot = var.skip_final_snapshot
   deletion_protection = var.rds_db_delete_protection
+  apply_immediately   = var.apply_immediately
   tags                = var.tags
 }
