@@ -73,7 +73,7 @@ data "aws_iam_policy_document" "credential_manager_lambda" {
 resource "aws_lambda_invocation" "postgres_init" {
   count = var.engine == "postgres" ? 1 : 0
 
-  function_name   = module.image_credential_manager.lambda_function_arn
+  function_name   = module.credential_manager.lambda_function_arn
   lifecycle_scope = "CREATE_ONLY"
   input = jsonencode({
     "USERNAME"    = "ignore",
@@ -88,7 +88,7 @@ resource "aws_lambda_invocation" "postgres_init" {
 resource "aws_lambda_invocation" "db_service" {
   for_each = { for value in var.db_service_users : value.user => value }
 
-  function_name   = module.image_credential_manager.lambda_function_arn
+  function_name   = module.credential_manager.lambda_function_arn
   lifecycle_scope = "CRUD"
 
   input = jsonencode({
