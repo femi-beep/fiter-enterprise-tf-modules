@@ -102,5 +102,25 @@ variable "docker_image" {
   type        = string
   description = "Docker image to use for the Lambda function"
   default     = null
-  
+}
+
+variable "function_source" {
+  type = string
+  description = "The source type for the Lambda function (zip or image)"
+  validation {
+    condition     = var.function_source == "zip" || var.function_source == "image"
+    error_message = "function_source must be either 'zip' or 'image'."
+  }
+}
+
+variable "timeout" {
+  type        = number
+  description = "Timeout for the Lambda function"
+  default     = 120
+}
+
+variable "function_code_path" {
+  description = "Path to the Lambda function code"
+  type        = string
+  default     = "lambdas"
 }

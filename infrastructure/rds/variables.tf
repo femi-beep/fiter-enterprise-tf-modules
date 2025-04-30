@@ -128,45 +128,6 @@ variable "rds_subnets" {
   description = "VPC Subnets to Deploy RDS In"
   type        = list(string)
 }
-
-variable "intra_subnets" {
-  description = "VPC Subnets to Deploy Lambda Non accessible In"
-  type        = list(string)
-}
-
-variable "db_service_users" {
-  description = "service user to create for application"
-  type = list(object({
-    user        = string
-    access_type = string
-    databases   = list(string)
-  }))
-  default = []
-
-  validation {
-    condition = alltrue([
-      for o in var.db_service_users : contains(["readonly", "readwrite"], o.access_type)
-    ])
-    error_message = "Access_Type can only contains readonly or readwrite. Kindly check your service Users"
-  }
-
-  validation {
-    condition = alltrue([
-      for o in var.db_service_users : can(regex("^[0-9A-Za-z_]+$", o.user))
-    ])
-    error_message = "Username should only contain numbers, letters and underscores. Only Alphanumeric values are allowed"
-  }
-
-  validation {
-    condition = alltrue(flatten([
-      for o in var.db_service_users : [
-        for db_name in o.databases : can(regex("^[0-9A-Za-z_]+$", db_name))
-      ]
-    ]))
-    error_message = "DB Names should only contain numbers, letters and underscores. Only Alphanumeric values are allowed"
-  }
-}
-
 variable "disable_rds_public_access" {
   description = "Turn Off Public RDS Access"
   type        = bool

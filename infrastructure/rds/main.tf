@@ -17,7 +17,6 @@
 
 locals {
   secret_path               = "${var.environment}/${var.db_identifier}"
-  enable_credential_manager = var.replicate_source_db == null && var.snapshot_name == null && var.enable_credential_manager
 }
 
 data "aws_caller_identity" "current" {}
@@ -76,7 +75,7 @@ module "db" {
   backup_window           = var.backup_window
 
   snapshot_identifier         = var.snapshot_name
-  manage_master_user_password = local.enable_credential_manager
+  manage_master_user_password = true
   monitoring_interval         = var.monitoring_interval
   monitoring_role_name        = "${var.db_identifier}RDSMonitoringRole"
   create_monitoring_role      = var.create_monitoring_role
