@@ -17,7 +17,6 @@
 
 locals {
   secret_path               = "${var.environment}/${var.db_identifier}"
-  enable_credential_manager = var.replicate_source_db == null && var.snapshot_name == null && var.enable_credential_manager
 }
 
 data "aws_caller_identity" "current" {}
@@ -76,7 +75,7 @@ module "db" {
   backup_window           = var.backup_window
 
   snapshot_identifier         = var.snapshot_name
-  manage_master_user_password = local.enable_credential_manager
+  manage_master_user_password = true
   monitoring_interval         = var.monitoring_interval
   monitoring_role_name        = "${var.db_identifier}RDSMonitoringRole"
   create_monitoring_role      = var.create_monitoring_role
@@ -108,126 +107,4 @@ module "db" {
   publicly_accessible = local.publicly_accessible # set to false to enforce it is not publicly accessible
 
   tags = local.tags
-}
-
-
-module "credential_generator" {
-  source  = "terraform-aws-modules/lambda/aws"
-  version = "2.7.0"
-
-  create                 = var.replicate_source_db == null && var.snapshot_name == null
-  function_name          = "${var.db_identifier}-rds-lambda"
-  description            = "Creates Database Users"
-  handler                = "index.lambda_handler"
-  runtime                = "python3.9"
-  source_path            = "${path.cwd}/lambdas/${var.engine}"
-  vpc_subnet_ids         = local.publicly_accessible ? var.rds_subnets : var.intra_subnets
-  vpc_security_group_ids = [aws_security_group.service.id]
-  attach_network_policy  = true
-  timeout                = 60
-
-  layers = [module.pymysql_layer.lambda_layer_arn]
-
-  environment_variables = {
-    ADMIN_SECRET_NAME = module.db.db_instance_master_user_secret_arn
-    DB_HOST           = module.db.db_instance_address
-    ADMIN_DB_NAME     = var.initial_db_name
-    DB_IDENTIFIER     = var.db_identifier
-    SECRET_PATH       = local.secret_path
-  }
-
-  attach_policy_json = true
-  policy_json        = data.aws_iam_policy_document.credential_manager_lambda.json
-
-  depends_on = [
-    module.db,
-    module.pymysql_layer
-  ]
-  tags = local.tags
-}
-
-data "aws_iam_policy_document" "credential_manager_lambda" {
-  statement {
-    sid    = "AllowSecretsManager"
-    effect = "Allow"
-    actions = [
-      "secretsmanager:GetSecretValue",
-    ]
-    resources = [module.db.db_instance_master_user_secret_arn]
-  }
-
-  statement {
-    sid    = "AllowSecretsManagerCreate"
-    effect = "Allow"
-    actions = [
-      "secretsmanager:CreateSecret",
-      "secretsmanager:ListSecrets",
-      "secretsmanager:DescribeSecret",
-      "secretsmanager:TagResource",
-      "secretsmanager:GetRandomPassword"
-    ]
-    resources = ["*"]
-  }
-
-  statement {
-    sid    = "GetSecretUser"
-    effect = "Allow"
-    actions = [
-      "secretsmanager:GetSecretValue",
-      "secretsmanager:DeleteSecret"
-    ]
-    resources = ["arn:aws:secretsmanager:${var.region}:${data.aws_caller_identity.current.account_id}:secret:${local.secret_path}/*"]
-  }
-}
-
-module "pymysql_layer" {
-  source                 = "terraform-aws-modules/lambda/aws"
-  version                = "6.0.0"
-  create                 = local.enable_credential_manager
-  create_layer           = local.enable_credential_manager
-  layer_name             = "${var.db_identifier}-pysql-layer"
-  description            = "PythonMySQL Dependency needed for Lambda Function"
-  compatible_runtimes    = ["python3.11"]
-  create_package         = false
-  local_existing_package = "${path.module}/layers/${local.lambda_layer}"
-}
-
-# Invoke for DB Initialization
-resource "aws_lambda_invocation" "postgres_init" {
-  count         = var.engine == "postgres" && local.enable_credential_manager ? 1 : 0
-  function_name = module.credential_generator.lambda_function_arn
-  input = jsonencode({
-    "USERNAME"    = "ignore",
-    "DATABASES"   = [],
-    "DB_INIT"     = "True"
-    "ACCESS_TYPE" = "readonly"
-  })
-
-  lifecycle_scope = "CREATE_ONLY"
-  depends_on = [
-    module.db,
-    module.pymysql_layer,
-    module.credential_generator
-  ]
-}
-
-# Invoke to create users
-resource "aws_lambda_invocation" "db_service" {
-  for_each = local.enable_credential_manager ? { for value in var.db_service_users : value.user => value } : {}
-
-  function_name = module.credential_generator.lambda_function_arn
-
-  input = jsonencode({
-    "USERNAME"    = each.value.user,
-    "DATABASES"   = each.value.databases,
-    "DB_INIT"     = "False"
-    "ACCESS_TYPE" = each.value.access_type
-  })
-
-  lifecycle_scope = "CRUD"
-  depends_on = [
-    module.db,
-    module.pymysql_layer,
-    module.credential_generator
-  ]
 }

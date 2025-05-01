@@ -14,7 +14,7 @@
 module "eks_iam_role" {
   source        = "git::https://github.com/FITER1/fiter-enterprise-tf-modules.git//infrastructure//generic_iam_role?ref=v1.1.7"
   for_each      = local.enabled_service_accounts
-  create_policy = false
+  create_policy = true
   role_name     = each.key
   description   = "IAM role for ${each.key} service account"
   role_policy   = each.value.role_policy_json
