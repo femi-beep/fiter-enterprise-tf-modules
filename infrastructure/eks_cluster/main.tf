@@ -37,7 +37,7 @@ provider "kubernetes" {
 
 module "eks" {
   source          = "terraform-aws-modules/eks/aws"
-  version         = "~> 20.0"
+  version         = "~> 19.0"
   cluster_name    = local.cluster_name
   cluster_version = var.cluster_version
   subnet_ids      = var.subnets
@@ -49,7 +49,7 @@ module "eks" {
       resolve_conflicts_on_create = "OVERWRITE"
       resolve_conflicts_on_update = "OVERWRITE"
       configuration_values = var.enable_private_zone ? jsonencode({
-        corefile = <<-EOT
+          corefile = <<-EOT
             .:53 {
               errors
               health
@@ -80,11 +80,6 @@ module "eks" {
     vpc-cni = {
       resolve_conflicts_on_create = "OVERWRITE"
       resolve_conflicts_on_update = "OVERWRITE"
-      configuration_values = jsonencode({
-        env = {
-          ENABLE_PREFIX_DELEGATION = "true"
-        }
-      })
     }
     aws-ebs-csi-driver = {
       resolve_conflicts_on_create = "OVERWRITE"
@@ -119,10 +114,8 @@ module "eks" {
     }
   }
 
-  create_iam_role                          = true
-  enable_cluster_creator_admin_permissions = true
-  access_entries                           = var.eks_access_entries
-  authentication_mode                      = var.authentication_mode
+  create_iam_role = true
+
   eks_managed_node_groups = {
     for key, value in var.node_groups_attributes :
     key => {
@@ -139,11 +132,11 @@ module "eks" {
     }
   }
 
-  iam_role_additional_policies = merge({
+  iam_role_additional_policies = {
     AmazonSSMManagedInstanceCore       = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore",
     AmazonEC2ContainerRegistryReadOnly = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
-  }, var.additional_cluster_policies)
-
+  }
+  # Allow Extending without making module changes
   node_security_group_additional_rules = merge(local.node_security_group_rules, var.node_security_group_additional_rules)
   cluster_security_group_additional_rules = {
     ingress_bastion = {
@@ -159,7 +152,14 @@ module "eks" {
   tags = merge(var.common_tags, {
     "karpenter.sh/discovery" = local.cluster_name
   })
+
+  manage_aws_auth_configmap = true
+
+  aws_auth_roles = local.eks_auth_roles
+
+  aws_auth_users = local.eks_auth_users
 }
+
 
 # add support for fully private clusters
 module "endpoints" {
