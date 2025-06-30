@@ -281,17 +281,17 @@ module "eks_log_bucket" {
 
 
 module "karpenter" {
-  source  = "terraform-aws-modules/eks/aws//modules/karpenter"
-  version = "20.29.0"
-
+  source                 = "terraform-aws-modules/eks/aws//modules/karpenter"
+  version                = "19.20.0"
   cluster_name           = module.eks.cluster_name
   irsa_oidc_provider_arn = module.eks.oidc_provider_arn
-  create_node_iam_role   = false
-  enable_v1_permissions  = true
-  enable_irsa            = true
-  create_access_entry    = false
-  node_iam_role_arn      = element(local.node_group_arns, 0)
-  tags                   = var.common_tags
+
+  policies = {
+    AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+  }
+  irsa_tag_key    = "karpenter.sh/managed-by"
+  irsa_tag_values = [local.cluster_name]
+  tags            = var.common_tags
 }
 
 # POST EKS INSTALL
