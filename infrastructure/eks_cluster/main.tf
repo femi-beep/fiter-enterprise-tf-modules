@@ -1,42 +1,30 @@
+/**
+ * # AWS EKS Terraform Module
+ *
+ * This module provisions an [Amazon Elastic Kubernetes Service (EKS)](https://aws.amazon.com/eks/) cluster on AWS.
+ *
+ * The following resources are created as part of the module:
+ * - EKS Cluster: Managed Kubernetes control plane.
+ * - Node Groups: Managed or self-managed worker nodes.
+ * - IAM Roles and Policies: Configured for cluster, node group, and Kubernetes integration.
+ * - VPC Endpoints: Optional private access for clusters with public endpoint disabled.
+ * - Cluster Add-ons: Core DNS, VPC CNI, kube-proxy, and AWS EBS CSI driver.
+ * - Security Groups: Configured for cluster and node group communication.
+ * - S3 Logging Bucket: Optional centralized storage for EKS logging.
+ * - KMS Encryption: Enabled for cluster secrets and node group storage.
+ * 
+ * This module also supports creating fully private clusters, managing AWS Auth for RBAC, and deploying additional integrations such as Karpenter and Helm deployers.
+ */
+
 # ------------------------------------------------------------------------------
 # eks module
 # ------------------------------------------------------------------------------
 # support for assume role and other
-locals {
-  args = var.assume_role_arn == "" ? ["eks", "get-token", "--cluster-name", local.cluster_name] : ["eks", "get-token", "--cluster-name", local.cluster_name, "--role-arn", "${var.assume_role_arn}"]
-  interface_endpoints = { for endpoint in var.vpc_interface_endpoints : endpoint => {
-    service             = endpoint
-    service_type        = "Interface"
-    private_dns_enabled = true
-    tags = {
-      Name = "${endpoint}-vpc-endpoint"
-    }
-    }
-  }
-
-  gateway_endpoint = { for endpoint in var.vpc_gateway_endpoints : endpoint => {
-    service      = endpoint
-    service_type = "Gateway"
-    tags = {
-      Name = "${endpoint}-vpc-endpoint"
-    }
-    route_table_ids = var.route_table_ids
-    }
-  }
-
-  endpoints = merge(local.interface_endpoints, local.gateway_endpoint)
-  kube_deploy_user = var.helm_deploy ? [{
-    rolearn  = "arn:aws:iam::${local.account_id}:role/${local.cluster_name}-ghdeploy-role-kube-deploy"
-    username = "helm-ci-deployer"
-    groups   = ["ci-user"]
-  }] : []
-}
 
 data "aws_caller_identity" "current" {}
 
 provider "kubernetes" {
   host                   = module.eks.cluster_endpoint
-  
   cluster_ca_certificate = module.eks.cluster_certificate_authority_data != null ? base64decode(module.eks.cluster_certificate_authority_data) : ""
 
   exec {
@@ -49,7 +37,7 @@ provider "kubernetes" {
 
 module "eks" {
   source          = "terraform-aws-modules/eks/aws"
-  version         = "~> 19.0"
+  version         = "~> 20.0"
   cluster_name    = local.cluster_name
   cluster_version = var.cluster_version
   subnet_ids      = var.subnets
@@ -61,7 +49,7 @@ module "eks" {
       resolve_conflicts_on_create = "OVERWRITE"
       resolve_conflicts_on_update = "OVERWRITE"
       configuration_values = var.enable_private_zone ? jsonencode({
-          corefile = <<-EOT
+        corefile = <<-EOT
             .:53 {
               errors
               health
@@ -92,6 +80,11 @@ module "eks" {
     vpc-cni = {
       resolve_conflicts_on_create = "OVERWRITE"
       resolve_conflicts_on_update = "OVERWRITE"
+      configuration_values = jsonencode({
+        env = {
+          ENABLE_PREFIX_DELEGATION = "true"
+        }
+      })
     }
     aws-ebs-csi-driver = {
       resolve_conflicts_on_create = "OVERWRITE"
@@ -126,8 +119,10 @@ module "eks" {
     }
   }
 
-  create_iam_role = true
-
+  create_iam_role                          = true
+  enable_cluster_creator_admin_permissions = true
+  access_entries                           = var.eks_access_entries
+  authentication_mode                      = var.authentication_mode
   eks_managed_node_groups = {
     for key, value in var.node_groups_attributes :
     key => {
@@ -144,11 +139,11 @@ module "eks" {
     }
   }
 
-  iam_role_additional_policies = {
+  iam_role_additional_policies = merge({
     AmazonSSMManagedInstanceCore       = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore",
     AmazonEC2ContainerRegistryReadOnly = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
-  }
-  # Allow Extending without making module changes
+  }, var.additional_cluster_policies)
+
   node_security_group_additional_rules = merge(local.node_security_group_rules, var.node_security_group_additional_rules)
   cluster_security_group_additional_rules = {
     ingress_bastion = {
@@ -164,19 +159,13 @@ module "eks" {
   tags = merge(var.common_tags, {
     "karpenter.sh/discovery" = local.cluster_name
   })
-
-  manage_aws_auth_configmap = true
-
-  aws_auth_roles = local.eks_auth_roles
-
-  aws_auth_users = local.eks_auth_users
 }
 
 # add support for fully private clusters
 module "endpoints" {
   count                 = var.cluster_endpoint_public_access ? 0 : 1
   source                = "terraform-aws-modules/vpc/aws//modules/vpc-endpoints"
-  version               = "5.2.0"
+  version               = "5.17.0"
   vpc_id                = var.vpc_id
   create_security_group = false
   security_group_ids    = [module.eks.node_security_group_id, module.eks.cluster_security_group_id]
@@ -186,7 +175,7 @@ module "endpoints" {
 
 module "ebs_kms_key" {
   source  = "terraform-aws-modules/kms/aws"
-  version = "~> 1.5"
+  version = "~> 3.1"
 
   description = "Customer managed key to encrypt EKS managed node group volumes"
 
@@ -255,7 +244,7 @@ resource "aws_iam_policy" "aws_ebs_csi" {
 
 module "aws_ebs_csi_iam_service_account" {
   source                        = "terraform-aws-modules/iam/aws//modules/iam-assumable-role-with-oidc"
-  version                       = "5.28.0"
+  version                       = "5.52.2"
   create_role                   = true
   role_name                     = "${local.prefix}-aws-ebs-csi"
   provider_url                  = replace(module.eks.cluster_oidc_issuer_url, "https://", "")
@@ -265,37 +254,44 @@ module "aws_ebs_csi_iam_service_account" {
 
 module "eks_log_bucket" {
   source  = "terraform-aws-modules/s3-bucket/aws"
-  version = "3.15.1"
-  bucket = format(
-    "%s-%s-%s",
-    var.eks_logging_bucketname,
-    local.cluster_name,
-    data.aws_caller_identity.current.account_id
-  )
-  acl           = "private"
-  force_destroy = true
+  version = "3.15.2"
 
+  bucket                   = local.eks_log_bucket
+  acl                      = "private"
+  force_destroy            = true
   control_object_ownership = true
   object_ownership         = "ObjectWriter"
 
   versioning = {
     enabled = true
   }
+  lifecycle_rule = [for key, property in var.log_bucket_lifecycle_rules : {
+    id      = key
+    enabled = true
+    filter = {
+      prefix = property.path
+    }
+    expiration = {
+      days                         = property.expiration_days
+      expired_object_delete_marker = lookup(property, "expired_object_delete_marker", false)
+    }
+    }
+  ]
 }
 
 
 module "karpenter" {
-  source                 = "terraform-aws-modules/eks/aws//modules/karpenter"
-  version                = "19.20.0"
+  source  = "terraform-aws-modules/eks/aws//modules/karpenter"
+  version = "20.29.0"
+
   cluster_name           = module.eks.cluster_name
   irsa_oidc_provider_arn = module.eks.oidc_provider_arn
-
-  policies = {
-    AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-  }
-  irsa_tag_key    = "karpenter.sh/managed-by"
-  irsa_tag_values = [local.cluster_name]
-  tags            = var.common_tags
+  create_node_iam_role   = false
+  enable_v1_permissions  = true
+  enable_irsa            = true
+  create_access_entry    = false
+  node_iam_role_arn      = element(local.node_group_arns, 0)
+  tags                   = var.common_tags
 }
 
 # POST EKS INSTALL
@@ -309,49 +305,4 @@ resource "aws_ssm_parameter" "cluster_certificate_data" {
   name  = "/kubernetes/${local.cluster_name}/clusterCertificateData"
   type  = "SecureString"
   value = module.eks.cluster_certificate_authority_data
-}
-
-module "eks-kubeconfig" {
-  source  = "hyperbadger/eks-kubeconfig/aws"
-  version = "2.0.0"
-
-  depends_on = [module.eks]
-  cluster_name  = module.eks.cluster_name
-}
-
-resource "local_file" "kubeconfig" {
-  content  = module.eks-kubeconfig.kubeconfig
-  filename = "kubeconfig-${local.cluster_name}"
-  lifecycle {
-    ignore_changes = all
-  }
-}
-
-data "external" "os" {
-  program = ["sh", "${path.cwd}/get_os.sh"]
-}
-
-resource "null_resource" "custom" {
-  triggers = {
-    build_number = var.cluster_version
-  }
-
-  provisioner "local-exec" {
-    command = <<-EOF
-      arch=$(uname -m)
-      if [ "$arch" = "x86_64" ]; then
-        arch="amd64"
-        wget -q https://dl.k8s.io/release/v${var.cluster_version}.0/bin/linux/$arch/kubectl
-      elif [ "$arch" = "arm64" ]; then
-        arch="arm64"
-        wget -q https://dl.k8s.io/release/v${var.cluster_version}.0/bin/darwin/arm64/kubectl
-      fi
-      chmod +x kubectl
-    EOF
-  }
-
-  provisioner "local-exec" {
-    command = "./kubectl --kubeconfig kubeconfig-${local.cluster_name} set env daemonset aws-node -n kube-system ENABLE_PREFIX_DELEGATION=true && rm -rf kubeconfig-${local.cluster_name}"
-  }
-  depends_on = [local_file.kubeconfig]
 }
