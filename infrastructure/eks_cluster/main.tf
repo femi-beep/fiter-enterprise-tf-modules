@@ -1,30 +1,42 @@
-/**
- * # AWS EKS Terraform Module
- *
- * This module provisions an [Amazon Elastic Kubernetes Service (EKS)](https://aws.amazon.com/eks/) cluster on AWS.
- *
- * The following resources are created as part of the module:
- * - EKS Cluster: Managed Kubernetes control plane.
- * - Node Groups: Managed or self-managed worker nodes.
- * - IAM Roles and Policies: Configured for cluster, node group, and Kubernetes integration.
- * - VPC Endpoints: Optional private access for clusters with public endpoint disabled.
- * - Cluster Add-ons: Core DNS, VPC CNI, kube-proxy, and AWS EBS CSI driver.
- * - Security Groups: Configured for cluster and node group communication.
- * - S3 Logging Bucket: Optional centralized storage for EKS logging.
- * - KMS Encryption: Enabled for cluster secrets and node group storage.
- * 
- * This module also supports creating fully private clusters, managing AWS Auth for RBAC, and deploying additional integrations such as Karpenter and Helm deployers.
- */
-
 # ------------------------------------------------------------------------------
 # eks module
 # ------------------------------------------------------------------------------
 # support for assume role and other
+locals {
+  args = var.assume_role_arn == "" ? ["eks", "get-token", "--cluster-name", local.cluster_name] : ["eks", "get-token", "--cluster-name", local.cluster_name, "--role-arn", "${var.assume_role_arn}"]
+  interface_endpoints = { for endpoint in var.vpc_interface_endpoints : endpoint => {
+    service             = endpoint
+    service_type        = "Interface"
+    private_dns_enabled = true
+    tags = {
+      Name = "${endpoint}-vpc-endpoint"
+    }
+    }
+  }
+
+  gateway_endpoint = { for endpoint in var.vpc_gateway_endpoints : endpoint => {
+    service      = endpoint
+    service_type = "Gateway"
+    tags = {
+      Name = "${endpoint}-vpc-endpoint"
+    }
+    route_table_ids = var.route_table_ids
+    }
+  }
+
+  endpoints = merge(local.interface_endpoints, local.gateway_endpoint)
+  kube_deploy_user = var.helm_deploy ? [{
+    rolearn  = "arn:aws:iam::${local.account_id}:role/${local.cluster_name}-ghdeploy-role-kube-deploy"
+    username = "helm-ci-deployer"
+    groups   = ["ci-user"]
+  }] : []
+}
 
 data "aws_caller_identity" "current" {}
 
 provider "kubernetes" {
   host                   = module.eks.cluster_endpoint
+  
   cluster_ca_certificate = module.eks.cluster_certificate_authority_data != null ? base64decode(module.eks.cluster_certificate_authority_data) : ""
 
   exec {
@@ -159,7 +171,6 @@ module "eks" {
 
   aws_auth_users = local.eks_auth_users
 }
-
 
 # add support for fully private clusters
 module "endpoints" {
@@ -298,4 +309,49 @@ resource "aws_ssm_parameter" "cluster_certificate_data" {
   name  = "/kubernetes/${local.cluster_name}/clusterCertificateData"
   type  = "SecureString"
   value = module.eks.cluster_certificate_authority_data
+}
+
+module "eks-kubeconfig" {
+  source  = "hyperbadger/eks-kubeconfig/aws"
+  version = "2.0.0"
+
+  depends_on = [module.eks]
+  cluster_name  = module.eks.cluster_name
+}
+
+resource "local_file" "kubeconfig" {
+  content  = module.eks-kubeconfig.kubeconfig
+  filename = "kubeconfig-${local.cluster_name}"
+  lifecycle {
+    ignore_changes = all
+  }
+}
+
+data "external" "os" {
+  program = ["sh", "${path.cwd}/get_os.sh"]
+}
+
+resource "null_resource" "custom" {
+  triggers = {
+    build_number = var.cluster_version
+  }
+
+  provisioner "local-exec" {
+    command = <<-EOF
+      arch=$(uname -m)
+      if [ "$arch" = "x86_64" ]; then
+        arch="amd64"
+        wget -q https://dl.k8s.io/release/v${var.cluster_version}.0/bin/linux/$arch/kubectl
+      elif [ "$arch" = "arm64" ]; then
+        arch="arm64"
+        wget -q https://dl.k8s.io/release/v${var.cluster_version}.0/bin/darwin/arm64/kubectl
+      fi
+      chmod +x kubectl
+    EOF
+  }
+
+  provisioner "local-exec" {
+    command = "./kubectl --kubeconfig kubeconfig-${local.cluster_name} set env daemonset aws-node -n kube-system ENABLE_PREFIX_DELEGATION=true && rm -rf kubeconfig-${local.cluster_name}"
+  }
+  depends_on = [local_file.kubeconfig]
 }
