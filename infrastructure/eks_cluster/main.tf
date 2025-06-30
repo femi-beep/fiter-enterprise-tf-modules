@@ -165,7 +165,7 @@ module "eks" {
 module "endpoints" {
   count                 = var.cluster_endpoint_public_access ? 0 : 1
   source                = "terraform-aws-modules/vpc/aws//modules/vpc-endpoints"
-  version               = "5.17.0"
+  version               = "5.2.0"
   vpc_id                = var.vpc_id
   create_security_group = false
   security_group_ids    = [module.eks.node_security_group_id, module.eks.cluster_security_group_id]
@@ -175,7 +175,7 @@ module "endpoints" {
 
 module "ebs_kms_key" {
   source  = "terraform-aws-modules/kms/aws"
-  version = "~> 3.1"
+  version = "~> 1.5"
 
   description = "Customer managed key to encrypt EKS managed node group volumes"
 
@@ -244,7 +244,7 @@ resource "aws_iam_policy" "aws_ebs_csi" {
 
 module "aws_ebs_csi_iam_service_account" {
   source                        = "terraform-aws-modules/iam/aws//modules/iam-assumable-role-with-oidc"
-  version                       = "5.52.2"
+  version                       = "5.28.0"
   create_role                   = true
   role_name                     = "${local.prefix}-aws-ebs-csi"
   provider_url                  = replace(module.eks.cluster_oidc_issuer_url, "https://", "")
@@ -254,29 +254,22 @@ module "aws_ebs_csi_iam_service_account" {
 
 module "eks_log_bucket" {
   source  = "terraform-aws-modules/s3-bucket/aws"
-  version = "3.15.2"
+  version = "3.15.1"
+  bucket = format(
+    "%s-%s-%s",
+    var.eks_logging_bucketname,
+    local.cluster_name,
+    data.aws_caller_identity.current.account_id
+  )
+  acl           = "private"
+  force_destroy = true
 
-  bucket                   = local.eks_log_bucket
-  acl                      = "private"
-  force_destroy            = true
   control_object_ownership = true
   object_ownership         = "ObjectWriter"
 
   versioning = {
     enabled = true
   }
-  lifecycle_rule = [for key, property in var.log_bucket_lifecycle_rules : {
-    id      = key
-    enabled = true
-    filter = {
-      prefix = property.path
-    }
-    expiration = {
-      days                         = property.expiration_days
-      expired_object_delete_marker = lookup(property, "expired_object_delete_marker", false)
-    }
-    }
-  ]
 }
 
 
