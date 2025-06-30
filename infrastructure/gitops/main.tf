@@ -46,9 +46,7 @@ resource "helm_release" "argocd" {
   version    = var.argocd_version
   chart      = "argo-cd"
   namespace  = var.k8s_namespace
-  values = [
-    templatefile("${path.module}/files/base-config.yaml", local.eks_helm_map)
-  ]
+  
 
   create_namespace = true
 }
