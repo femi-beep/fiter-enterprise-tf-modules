@@ -41,7 +41,7 @@ module "vpc" {
 module "endpoints" {
   count  = var.enable_secretmanager_vpc_endpoint ? 1 : 0
   source = "terraform-aws-modules/vpc/aws//modules/vpc-endpoints"
-  version = "5.8.1"
+  version               = "5.17.0"
 
   vpc_id                = module.vpc.vpc_id
   create_security_group = true
