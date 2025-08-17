@@ -17,6 +17,7 @@ locals {
 module "secrets_manager" {
   for_each = var.secrets
   source   = "terraform-aws-modules/secrets-manager/aws"
+  version = "1.3.1"
 
   # Secret
   name                    = "kubernetes/${var.clustername}/${each.key}"
